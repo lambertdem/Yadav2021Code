@@ -38,11 +38,11 @@ function plotθλ(chains::Matrix{Float64},trueθ,trueλ,λind)
     display(plot(p...,layout =(3,4),size=(2400,1800)))
 end
 
-function compareQQ(Y,covars,trueθ,fittedθ)
+function compareQQ(Y,covars,trueθ,fittedθ,hypers)
     p = fill(plot(),size(Y)[2]*2,1)
     for i in 0:(size(Y)[2]-1)
-        p[2*i+1] = testYmargins(Y,covars,trueθ,i+1,false)
-        p[2*i+2] = testYmargins(Y,covars,fittedθ,i+1,false)
+        p[2*i+1] = testYmargins(Y,covars,trueθ,i+1,hypers,false)
+        p[2*i+2] = testYmargins(Y,covars,fittedθ,i+1,hypers,false)
     end
     for i in 0:convert(Int64,size(Y)[2]/5)
         display(plot(p[collect((8*i+1):(8*i+8))]...,layout=(4,2)))
@@ -50,7 +50,7 @@ function compareQQ(Y,covars,trueθ,fittedθ)
 end
 
 function preddens(fittedθ,covars,hypers,ind,range)
-    α = getα(fittedθ.α,covars,hypers.nsites,hypers.ntimes)
+    α = getα(fittedθ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
     β₁ = fittedθ.β₁; β₂ = fittedθ.β₂
     αᵢⱼ = α[ind[1],ind[2]]
     f(x) = αᵢⱼ^(-β₁)*gamma(β₁+β₂)*(1+x/αᵢⱼ)^(-β₁-β₂)*x^(β₁-1)/(gamma(β₁)*gamma(β₂))

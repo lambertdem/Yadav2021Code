@@ -54,19 +54,19 @@ Obtain a Q-Q plot of marginal observations
  - column : site to examine marginally
  - qqplot : boolean to display the Q-Q plot
 """
-function testYmargins(Y,covars,θ,column,qqplot=true)
-    α = getα(θ.α,covars,size(Y)[2],size(Y)[1])
-    probs = collect(1:size(Y)[1])/(size(Y)[1]+1)
-    term1 = (θ.β₁/θ.β₂)*quantile(FDist(2*θ.β₁,2*θ.β₂),probs)
-    theor = [α[i,column]*term1 for i in 1:size(Y)[1]]
-    p = plot(sort(Y[:,column]),theor,title=string("Site ", column), 
+function testYmargins(Y,covars,θ,column,hypers,qqplot=true)
+    nsites = hypers.nsites; ntimes = hypers.ntimes
+    α = getα(θ.α,covars[:,hypers.covarsα],nsites,ntimes)
+    probs = collect(1:ntimes)/(ntimes+1)
+    YFscale = [θ.β₂*Y[i,column]/(θ.β₁*α[i,column]) for i in 1:ntimes]
+    theor = [quantile(FDist(2*θ.β₁,2*θ.β₂),probs[i]) for i in 1:ntimes]
+    p = plot(sort(YFscale),theor,title=string("Site ", column), 
             seriestype = :scatter,legend=:none,size=(1200,1200))
     abline!(p,1,0)
     if qqplot == true
         display(p)
     end
     return(p)
-
 end
 
 function boxplot(Y)

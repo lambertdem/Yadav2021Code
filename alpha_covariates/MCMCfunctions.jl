@@ -22,6 +22,7 @@ struct hyperparameter
     ntimes::Int64
     κ₁::Int64
     κ₂::Int64
+    σpropθ::Vector{Float64}
     τθ::Float64
     τλ::Float64
     niters::Int64
@@ -32,6 +33,7 @@ struct hyperparameter
     targtaccpt::Vector{Float64}
     boundtargtaccpt::Matrix{Float64}
     w::Vector{Float64}
+    covarsα::Vector{Int64}
 end
 
 struct mcmc 
@@ -194,7 +196,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     α_vec= θ.α; β₁ = θ.β₁; β₂ = θ.β₂; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
 
-    α = getα(α_vec,covars,nsites,ntimes)
+    α = getα(α_vec,covars[:,hypers.covarsα],nsites,ntimes)
     logpriorα = sum([log(pdf(Normal(0,10),α_vec[i])) for i in 1:size(α_vec)[1]])
     logpriorβ₁= log(PCpriorβ₁(β₁,hypers.κ₁)); logpriorβ₂= log(PCpriorβ₂(β₂,hypers.κ₂))
     logpriorρ = log(pdf(Gamma(0.01,100.),ρ))
@@ -267,7 +269,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (l
  - hypers: hyperparameters of the model
 """
 function gradlogpost_t(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
-    α = getα(θ.α,covars,hypers.nsites,hypers.ntimes)
+    α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
     β₁ = θ.β₁; β₂ = θ.β₂; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
     loggrad = Array{Float64}(undef,hypers.ntimes,hypers.nsites)
@@ -306,7 +308,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (V
  - hypers: hyperparameters of the model
 """
 function gradlogpost_t1(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
-    α = getα(θ.α,covars,hypers.nsites,hypers.ntimes)
+    α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
     β₁ = θ.β₁; β₂ = θ.β₂; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
     loggrad = Array{Float64}(undef,hypers.ntimes,hypers.nsites)
@@ -353,9 +355,9 @@ Obtain new candidate/proposal for tildeθ
  - tildeθ: Reparameterized θ
  - hypers: hyperparameters of the model
 """
-function θproposal(tildeθ::parameter,τ::Vector{Float64})
+function θproposal(tildeθ::parameter,τ::Vector{Float64},hypers::hyperparameter)
     μ = getθvec(tildeθ)
-    Σ = Diagonal(τ[1] * ones(size(μ)[1]))
+    Σ = Diagonal(τ[1] * hypers.σpropθ) #new
     proptilde = rand(MvNormal(μ,Σ),1)
     return getθobj(proptilde,tildeθ)
 end
@@ -468,7 +470,7 @@ Obtain sensible initial values for λ
  - hypers: Hyperparameters of the model
 """
 function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter)
-    α = getα(θ.α,covars,hypers.nsites,hypers.ntimes)
+    α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
     initλ = quantile.(Gamma.(θ.β₂,(1.)./α),0.5)
     return initλ
 end 
@@ -584,6 +586,7 @@ function readjson(pathjson::String)
                             get(hyps,"ntimes",0),
                             get(hyps,"kappa1",0),
                             get(hyps,"kappa2",0),
+                            get(hyps,"sigmaproptheta",0),
                             get(hyps,"tau_theta",0),
                             get(hyps,"tau_lambda",0),
                             get(hyps,"n_iter",0),
@@ -593,7 +596,8 @@ function readjson(pathjson::String)
                             get(hyps,"burnin2",0),
                             get(hyps,"targt_accept_tau",0),
                             hcat(get(hyps,"bound_targt_accpt_tau_theta",0),get(hyps,"bound_targt_accpt_tau_lambda",0)),
-                            get(hyps,"w",0))
+                            get(hyps,"w",0),
+                            get(hyps,"covars_alpha",0))
 
     if get(sim,"yesno",false) & get(realdata,"yesno",false)
         println("Only one of 'simulation' or 'real_data' must be true.")
