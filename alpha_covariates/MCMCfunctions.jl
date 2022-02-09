@@ -506,6 +506,7 @@ function ΓΓ_MCMC(init::mcmc)
     τmatrixcount = 1 # Counter for number of τ updates
 
     logliktildeθ = 0
+    logliktildeλ = 0
     changeθind = 0 # 1 if there was a change for θ in previous iteration
     ∇logtildeλ = tildegradlogpost(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
 
@@ -522,7 +523,7 @@ function ΓΓ_MCMC(init::mcmc)
         end
 
         # Proposal of new tildeθ
-        proptildeθ = θproposal(tildeθ,τ)
+        proptildeθ = θproposal(tildeθ,τ,hypers)
 
         # loglikelihood of tildeθ and proptildeθ
         if i == 1
