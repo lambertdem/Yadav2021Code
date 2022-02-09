@@ -75,8 +75,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-# @time chains,τs = ΓΓ_MCMC(mcmc1)
-# chains
+@time chains,τs = ΓΓ_MCMC(mcmc1)
+chains
 
 filenm = "RunAlpha1_2022-02-09T12-46-43-964.csv"
 savepath = get(sim_or_real,"save_path",0)
