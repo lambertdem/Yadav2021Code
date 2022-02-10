@@ -53,7 +53,7 @@ else
 end
 
 # Boxplot of Y
-# boxplot(Y)
+boxplot(Y)
 # Test margins against trueθ
 # testYmargins(Y,covars,trueθ,12,hypers,true)
 

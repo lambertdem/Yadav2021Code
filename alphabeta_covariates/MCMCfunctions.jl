@@ -6,6 +6,7 @@ using LinearAlgebra: Diagonal
 using CSV,DataFrames,Dates
 using JSON: parsefile
 using Plots
+using Statistics: mean
 
 export hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,getα,getβ₂,initvalsλ,ΓΓ_MCMC,readjson,gridsearchdensity
 
@@ -288,32 +289,6 @@ function ∇logpostλ_n(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Fl
 end
 
 """
-Compute the numerical gradient of the log density of θ evaluated at λ, θ
-
-# Arguments
- - Y: Observed data (n x d matrix)
- - λ: log of latent parameters λ
- - covars: Covariates for the model
- - θ: Reparameterized θ
- - distm: distance matrix between sites
- - indcens: indices of censored locations and times
- - indnocens: indices of non-censored locations and times
- - u: censoring threshold matrix
- - hypers: hyperparameters of the model
-"""
-function tilde∇logpostθ_n(Y::Matrix{Float64},logλ::Matrix{Float64},covars::Matrix{Float64},tildeθ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},τ::Vector{Float64},hypers::hyperparameter)
-    θvec = getθvec(tildeθ)
-    ∇ = copy(θvec)
-    for i in 1:size(θvec)[1]
-        θvec₊ = θvec; θvec₋ = θvec
-        θvec₊[i] += hypers.δ_∇numer; θvec₋[i] -= hypers.δ_∇numer
-        θ₊ = getθobj(θvec₊,tildeθ); θ₋ = getθobj(θvec₋,tildeθ)
-        ∇[i] = (tildelogpost(Y,logλ,covars,θ₊,distm,indcens,indnocens,u,hypers)-tildelogpost(Y,logλ,covars,θ₋,distm,indcens,indnocens,u,hypers))/(2*hypers.δ_∇numer)
-    end
-    return ∇
-end
-
-"""
 Compute the theoretical gradient of the log density of λ evaluated at λ, θ (loop version)
 
 # Arguments
@@ -416,28 +391,11 @@ Obtain new candidate/proposal for tildeθ
  - tildeθ: Reparameterized θ
  - hypers: hyperparameters of the model
 """
-function θproposal(tildeθ::parameter,∇tildeθ::Vector{Float64},τ::Vector{Float64},hypers::hyperparameter)
-    μ = getθvec(tildeθ) .+ τ[1]*hypers.σpropθ .* ∇tildeθ/2
+function θproposal(tildeθ::parameter,τ::Vector{Float64},hypers::hyperparameter)
+    μ = getθvec(tildeθ)
     Σ = Diagonal(τ[1] * hypers.σpropθ)
     proptilde = vec(rand(MvNormal(μ,Σ),1))
     return getθobj(proptilde,tildeθ)
-end
-
-"""
-Compute density of the θ proposal distribution at tildeθprop
-
-# Arguments
- - logλ: log of latent parameters λ
- - ∇logλ: gradient of the log-density evaluated at logλ, ∇logλ = tilde∇logpostλ(...)
- - logλprop: New logλ candidate
- - hypers: hyperparameters of the model
-"""
-function logdensθprop(tildeθ::parameter,∇tildeθ::Vector{Float64},tildeθprop::parameter,τ::Vector{Float64},hypers::hyperparameter)
-    tildeθvec = getθvec(tildeθ); tildeθpropvec = getθvec(tildeθprop)
-    μ = tildeθvec .+ τ[1] * hypers.σpropθ .*∇tildeθ/2
-    logdensθ = 0
-    for i in 1:size(tildeθvec)[1] logdensθ += log(pdf(Normal(μ[i],sqrt(τ[1]*hypers.σpropθ[i])),tildeθpropvec[i])) end
-    return logdensθ
 end
 
 """
@@ -547,6 +505,22 @@ function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter
     return initλ
 end 
 
+function plotθ(chains::Matrix{Float64},θ::parameter)
+    n = size(θ.α)[1] + size(θ.β₂)[1] + 2
+    txt = ["α"*Char(0x2080 + i) for i in 0:(size(θ.α)[1]-1)]
+    txt = vcat(txt,"β₁")
+    txt = vcat(txt,["β₂"*Char(0x2080 + i) for i in 0:(size(θ.β₂)[1]-1)])
+    txt = vcat(txt,"ρ")
+    p = fill(plot(),n,1)
+    for j in 1:size(txt)[1]
+        p[j] = plot(chains[:,j],title=txt[j])
+        Plots.abline!(0,mean(chains[:,j]),linecolor=[:red])
+        Plots.abline!(0,quantile(chains[:,j],0.025),linecolor=[:orange])
+        Plots.abline!(0,quantile(chains[:,j],0.975),linecolor=[:orange])
+    end
+    display(plot(p...,layout =(2,4),size=(2400,1800)))
+end
+
 """
 Perform MCMC sampling to obtain postetior chains for θ
 
@@ -579,16 +553,13 @@ function ΓΓ_MCMC(init::mcmc)
 
     logliktildeθ = 0
     logliktildeλ = 0
-    loglikθ = 0
-    loglikλ = 0
     changeλind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     changeθind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     ∇logtildeλ = tilde∇logpostλ(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
-    ∇tildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,τ,hypers)
 
     for i in 1:(init.n_it-1)
-        if mod(i,10000) == 0
-            display(Plots.plot(chains[:,1:8]))
+        if mod(i,50000) == 0
+            plotθ(chains[1:thincount,:],θ)
         end
 
         # Update τ after 'nadapt' iterations and save resulting values
@@ -598,13 +569,8 @@ function ΓΓ_MCMC(init::mcmc)
             τmatrix[τmatrixcount,:] = τ
         end
 
-        # If no change since last θ proposal, no need to recompute gradient
-        if changeθind == 1
-            ∇tildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,τ,hypers)
-            changeθind = 0
-        end
         # Proposal of new tildeθ
-        proptildeθ = θproposal(tildeθ,∇tildeθ,τ,hypers)
+        proptildeθ = θproposal(tildeθ,τ,hypers)
 
         # loglikelihood of tildeθ and proptildeθ
         if i == 1
@@ -614,14 +580,9 @@ function ΓΓ_MCMC(init::mcmc)
         end
         loglikproptildeθ = tildelogpost(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,hypers)
 
-        logdenscurtoprop = logdensθprop(tildeθ,∇tildeθ,proptildeθ,τ,hypers)
-        ∇proptildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,τ,hypers)
-        logdensproptocur = logdensθprop(proptildeθ,∇proptildeθ,tildeθ,τ,hypers)
-
-        if log(rand(Uniform(),1)[1]) < loglikproptildeθ + logdensproptocur - logliktildeθ - logdenscurtoprop
+        if log(rand(Uniform(),1)[1]) < loglikproptildeθ - logliktildeθ
             logliktildeθ = loglikproptildeθ # So there is no need to recompute logliktildeλ after
             tildeθ = proptildeθ
-            ∇tildeθ = ∇proptildeθ
             accptcount[1] += 1
             changeλind = 1
         end
@@ -635,7 +596,7 @@ function ΓΓ_MCMC(init::mcmc)
         proptildeλ = λproposal(tildeλ,∇logtildeλ,τ,hypers)
 
         # loglikelihood of tildeλ, proptildeλ and proposal
-        logliktildeλ = logliktildeθ; loglikλ = loglikθ # Same value and already computed in this iteration
+        logliktildeλ = logliktildeθ # Same value and already computed in this iteration
         loglikproptildeλ = tildelogpost(Y,proptildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
 
         logdenscurtoprop = logdensλprop(tildeλ,∇logtildeλ,proptildeλ,τ,hypers)
@@ -648,7 +609,6 @@ function ΓΓ_MCMC(init::mcmc)
             tildeλ = proptildeλ
             ∇logtildeλ = ∇logproptildeλ
             accptcount[2] += 1
-            changeθind = 1
         end
 
         # Save the new parameters and latent parameters
