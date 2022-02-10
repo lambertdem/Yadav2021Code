@@ -25,7 +25,7 @@ if sim == true
     distm= distmatrix(m)
 
     # Plot site locations
-    display(plot(m[:,1],m[:,2], seriestype = :scatter, title = "Locations"))
+    # display(plot(m[:,1],m[:,2], seriestype = :scatter, title = "Locations"))
 
     # Create an artifical covariance matrix with 3 predictor variables
     covars = hcat(m[:,1],m[:,2],rand(Normal(0,1),hypers.nsites))
@@ -51,9 +51,8 @@ else
     _,_,_,realdata = readjson(jsonpath)
 
 end
-
 # Boxplot of Y
-boxplot(Y)
+# boxplot(Y)
 # Test margins against trueθ
 # testYmargins(Y,covars,trueθ,10,true)
 

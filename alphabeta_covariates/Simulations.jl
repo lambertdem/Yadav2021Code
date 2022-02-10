@@ -1,5 +1,5 @@
 module simulations
-include("MCMCfunctions3.jl")
+include("MCMCfunctions.jl")
 using .MCMCfit: parameter, getα, getβ₂
 using Distributions: pdf,cdf,quantile,FDist,Gamma,Normal,MvNormal,Uniform
 using Plots: plot, abline!

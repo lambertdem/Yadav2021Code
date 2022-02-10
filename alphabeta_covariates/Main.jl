@@ -3,15 +3,15 @@ using Distributions: pdf,cdf,quantile,Uniform,Gamma,Normal,MvNormal,FDist
 using Random: rand,seed!
 using Plots: plot, abline!
 
-include("MCMCfunctions3.jl")
-using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson,gridsearchdensity
-include("Simulations3.jl")
+include("MCMCfunctions.jl")
+using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson,gridsearchdensity,getβ₂
+include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
-include("Results3.jl")
+include("Results.jl")
 using .results: plotθλ, compareQQ, preddens
 
-jsonfilenm = "Run4"
-jsonpath = string("C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\MScThesisCode\\Runs\\",jsonfilenm,".json")
+jsonfilenm = "RunAlphaBeta1"
+jsonpath = string("C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\",jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
 
 ######################################
@@ -25,7 +25,7 @@ if sim == true
     distm= distmatrix(m)
 
     # Plot site locations
-    display(plot(m[:,1],m[:,2], seriestype = :scatter, title = "Locations"))
+    # display(plot(m[:,1],m[:,2], seriestype = :scatter, title = "Locations"))
 
     # Create an artifical covariance matrix with 3 predictor variables
     covars = hcat(m[:,1],m[:,2],rand(Normal(0,1),hypers.nsites))
@@ -53,12 +53,17 @@ else
 end
 
 # Boxplot of Y
-boxplot(Y)
+# boxplot(Y)
 # Test margins against trueθ
 # testYmargins(Y,covars,trueθ,12,hypers,true)
 
 # Get sensible initial λ values based on initθ
 λ = initvalsλ(initθ,covars,hypers)
+
+# filenm = "Run3_2022-02-09T12-46-43-964.csv"
+# savepath = get(sim_or_real,"save_path",0)
+# prev_chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))[:,8:end]
+# λ = exp.(reshape([mean(prev_chains[:,i]) for i in 1:size(prev_chains)[2]],hypers.ntimes,hypers.nsites))
 
 # Get the censoring indices
 indcens = findall(x->x==1,Y.<u)

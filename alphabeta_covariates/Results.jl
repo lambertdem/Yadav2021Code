@@ -4,9 +4,9 @@ using Plots: plot, abline!
 using Statistics
 using Distributions: pdf, FDist
 using SpecialFunctions: gamma
-include("MCMCfunctions3.jl")
+include("MCMCfunctions.jl")
 using .MCMCfit: parameter, getα
-include("Simulations3.jl")
+include("Simulations.jl")
 using .simulations: testYmargins
 
 export plotθλ, compareQQ, preddens

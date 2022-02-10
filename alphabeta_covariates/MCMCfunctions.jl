@@ -202,9 +202,9 @@ function getβ₂(β₂_vec::Vector{Float64},covars::Matrix{Float64},nsites,ntim
     if size(covars)[1] == n
         β₂ = β₂_vec[1].*ones(size(covars)[1]) .+ covars*β₂_vec[2:end]
     else
-        β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],outer=ntimes)
+        β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=ntimes)
     end
-    return transpose(exp.(reshape(β₂,nsites,ntimes)))
+    return exp.(reshape(β₂,ntimes,nsites))
 end
 
 """
