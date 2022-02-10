@@ -21,7 +21,6 @@ function plotθλ(chains::Matrix{Float64},trueθ,trueλ,λind)
     txt = vcat(txt,"β₁")
     txt = vcat(txt,["β₂"*Char(0x2080 + i) for i in 0:(size(trueθ.β₂)[1]-1)])
     txt = vcat(txt,"ρ")
-    display(txt)
     p = fill(plot(),n,1)
     for k in 1:size(txt)[1]
         p[k] = plot(chains[:,k],title=txt[k])
@@ -42,11 +41,11 @@ function plotθλ(chains::Matrix{Float64},trueθ,trueλ,λind)
     display(plot(p...,layout =(3,4),size=(2400,1800)))
 end
 
-function compareQQ(Y,covars,trueθ,fittedθ)
+function compareQQ(Y,covars,trueθ,fittedθ,hypers)
     p = fill(plot(),size(Y)[2]*2,1)
     for i in 0:(size(Y)[2]-1)
-        p[2*i+1] = testYmargins(Y,covars,trueθ,i+1,false)
-        p[2*i+2] = testYmargins(Y,covars,fittedθ,i+1,false)
+        p[2*i+1] = testYmargins(Y,covars,trueθ,i+1,hypers,false)
+        p[2*i+2] = testYmargins(Y,covars,fittedθ,i+1,hypers,false)
     end
     for i in 0:convert(Int64,size(Y)[2]/5)
         display(plot(p[collect((8*i+1):(8*i+8))]...,layout=(4,2)))

@@ -97,15 +97,12 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
 # display(plot(m[:,1],m[:,2],legend=:none,seriestype = :scatter))
 # reparameterize(trueθ)
 
-@time chains,τs = ΓΓ_MCMC(mcmc1)
-chains
+# @time chains,τs = ΓΓ_MCMC(mcmc1)
+# chains
 
-# filenm = "Run1_2022-02-04T19-27-47-847.csv"
-# filenm = "Run3_2022-02-06T15-27-39-240.csv"
-# filenm = "Run3_2022-02-06T18-47-59-678.csv"
-# filenm = "Run4_2022-02-07T18-39-00-877.csv"
-# savepath = get(sim_or_real,"save_path",0)
-# chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
+filenm = "RunAlphaBeta1_2022-02-10T16-06-03-788.csv"
+savepath = get(sim_or_real,"save_path",0)
+chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
 plotθλ(chains,reparameterize(trueθ),trueλ,[111,222,555,777])
 
@@ -115,8 +112,7 @@ fittedtildeθ = parameter([mean(chains[:,i]) for i in 1:size(trueθ.α)[1]],
                     mean(chains[:,size(trueθ.α)[1]+size(trueθ.β₂)[1]+2]))
 
 fittedθ = deparameterize(fittedtildeθ)
-trueθ
 
-compareQQ(Y,covars,trueθ,fittedθ)
+compareQQ(Y,covars,trueθ,fittedθ,hypers)
 
 preddens(fittedθ,covars,hypers,[1,1],[0,300])
