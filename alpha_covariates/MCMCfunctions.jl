@@ -357,7 +357,7 @@ Obtain new candidate/proposal for tildeθ
 """
 function θproposal(tildeθ::parameter,τ::Vector{Float64},hypers::hyperparameter)
     μ = getθvec(tildeθ)
-    Σ = Diagonal(τ[1] * hypers.σpropθ) #new
+    Σ = Diagonal(τ[1]^2 * hypers.σpropθ) #new
     proptilde = rand(MvNormal(μ,Σ),1)
     return getθobj(proptilde,tildeθ)
 end
@@ -379,7 +379,7 @@ Obtain new candidate/proposal for tildeλ
 """
 function λproposal(logλ::Matrix{Float64},∇logλ::Matrix{Float64},τ::Vector{Float64},hypers::hyperparameter)
     μ = vec(logλ .+ τ[2]*∇logλ/2)
-    Σ = Diagonal(τ[2] .* ones(size(μ)[1]))
+    Σ = Diagonal(τ[2]^2 .* ones(size(μ)[1]))
     newλ = reshape(rand(MvNormal(μ,Σ),1),hypers.ntimes,hypers.nsites)
     return newλ
 end
