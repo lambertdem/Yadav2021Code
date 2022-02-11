@@ -127,10 +127,6 @@ function deparameterize(tildeθ::parameter)
     return depar
 end
 
-θ = parameter([1.,1.,1.,],2.0,[3.0],1)
-tildeθ = reparameterize(θ)
-deparameterize(tildeθ)
-
 """
 Compute the penalized complexity (PC) prior for β₁
 
@@ -504,6 +500,7 @@ function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter
     initλ = quantile.(Gamma.(β₂,(1.)./α),0.5)
     return initλ
 end 
+
 
 function plotθ(chains::Matrix{Float64},θ::parameter)
     n = size(θ.α)[1] + size(θ.β₂)[1] + 2
