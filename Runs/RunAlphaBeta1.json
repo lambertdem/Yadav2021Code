@@ -12,7 +12,6 @@
     "yesno": false,
     "data_path": "",
     "distm_path": "",
-    "covars_path": "",
     "u_path": ""
   },
   "hyperparameters": {
@@ -44,6 +43,7 @@
       "beta2": [1.0,0.0],
       "rho": 1.0
     },
+    "covars_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021Code\\Runs\\covars1.csv",
     "save_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Output\\"
   }
 }

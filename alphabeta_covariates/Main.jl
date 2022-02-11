@@ -10,8 +10,9 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, compareQQ, preddens
 
-jsonfilenm = "RunAlphaBeta1"
-jsonpath = string("C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\",jsonfilenm,".json")
+jsonfilenm = "RunAlphaBeta1" # Do NOT add json extension
+runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
+jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
 
 ######################################
@@ -28,8 +29,9 @@ if sim == true
     # display(plot(m[:,1],m[:,2], seriestype = :scatter, title = "Locations"))
 
     # Create an artifical covariance matrix with 3 predictor variables
-    covars = hcat(m[:,1],m[:,2],rand(Normal(0,1),hypers.nsites))
-
+    covars_path = get(sim_or_real,"covars_path",0)
+    covars = Matrix{Float64}(CSV.read(covars_path,DataFrame))
+    
     # Get remaining simulation JSON data
     _,_,_,_,trueθ = readjson(jsonpath)
 
