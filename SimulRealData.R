@@ -18,4 +18,22 @@ plot(mod2,Y)
 abline(0,1,col="red")
 
 Y <- matrix(Y,ncol=20)
-Y
+plot(c(Y)-mod1)
+
+range <- abs(mod1-mod2)
+covars <- cbind(mod1,mod2,alt,range)
+colnames(covars) <- c("Pred1","Pred2","Alt","Range")
+
+u <- matrix((mod1+mod2)/2,ncol=20) +2
+plot(Y,u)
+
+abline(0,1,col="red")
+
+path = "C:/Users/lambe/Documents/McGill/Masters/Thesis/Yadav2021Code/Runs/"
+write.csv(covars,paste0(path,"covars.csv"))
+
+write.csv(Y,paste0(path,"Y.csv"))
+
+write.csv(u,paste0(path,"u.csv"))
+
+cbind(Y[1:20],covars[1:20,1:2])

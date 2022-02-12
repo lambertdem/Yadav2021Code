@@ -555,6 +555,9 @@ function ΓΓ_MCMC(init::mcmc)
     ∇logtildeλ = tilde∇logpostλ(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
 
     for i in 1:(init.n_it-1)
+        if i<50000 && mod(i,10000)==0
+            plotθ(chains[1:thincount,:],θ)
+        end
         if mod(i,50000) == 0
             plotθ(chains[1:thincount,:],θ)
         end
@@ -665,7 +668,11 @@ function readjson(pathjson::String)
                         get(initθdict,"rho",0))
         return true,hypers,sim_or_real,initθ,trueθ
     elseif get(realdata,"yesno",false) #  Perform model fitting on real data
-        print("Not done yet")
+        initθdict = get(sim_or_real,"init_theta",0)
+        initθ = parameter(get(initθdict,"alpha",0),
+                        get(initθdict,"beta1",0),
+                        get(initθdict,"beta2",0),
+                        get(initθdict,"rho",0))
         return false,hypers,sim_or_real,initθ,realdata
     else
         println("One of simulation yesno or real_data yesno must be true.")

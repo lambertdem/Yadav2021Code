@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, compareQQ, preddens
 
-jsonfilenm = "RunAlphaBeta1" # Do NOT add json extension
+jsonfilenm = "RunAlphaBeta2" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -22,11 +22,11 @@ if sim == true
     seed!(hypers.seed)
 
     # Create a location matrix for artificial weather sites
-    m = locmatrix(hypers.nsites)
-    distm= distmatrix(m)
+    loc_m = locmatrix(hypers.nsites)
+    distm= distmatrix(loc_m)
 
     # Plot site locations
-    # display(plot(m[:,1],m[:,2], seriestype = :scatter, title = "Locations"))
+    # display(plot(loc_m[:,1],loc_m[:,2], seriestype = :scatter, title = "Locations"))
 
     # Create an artifical covariance matrix with 3 predictor variables
     covars_path = get(sim_or_real,"covars_path",0)
@@ -47,10 +47,30 @@ if sim == true
 # If fitting model on real data #
 #################################
 else
-    println("Not developped yet")
+    seed!(hypers.seed)
 
     # Get remaining JSON data
-    _,_,_,realdata = readjson(jsonpath)
+    _,_,_,_,realdata = readjson(jsonpath)
+
+    # Get the location matrix for weather sites
+    locm_path = get(sim_or_real,"loc_m_path",0)
+    loc_m = Matrix{Float64}(CSV.read(locm_path,DataFrame))
+    distm= distmatrix(loc_m)
+
+    # Plot site locations
+    # display(plot(loc_m[:,1],loc_m[:,2], seriestype = :scatter, title = "Locations"))
+
+    # Create an artifical covariance matrix with 3 predictor variables
+    covars_path = get(sim_or_real,"covars_path",0)
+    covars = Matrix{Float64}(CSV.read(covars_path,DataFrame))
+
+    # Get Y data
+    Y_path = get(realdata,"data_path",0)
+    Y = Matrix{Float64}(CSV.read(Y_path,DataFrame))
+
+    # Create censoring threshold
+    u_path = get(sim_or_real,"u_path",0)
+    u = Matrix{Float64}(CSV.read(u_path,DataFrame))
 
 end
 
@@ -99,8 +119,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
 # display(plot(m[:,1],m[:,2],legend=:none,seriestype = :scatter))
 # reparameterize(trueθ)
 
-# @time chains,τs = ΓΓ_MCMC(mcmc1)
-# chains
+@time chains,τs = ΓΓ_MCMC(mcmc1)
+chains
 
 filenm = "RunAlphaBeta1_2022-02-10T16-06-03-788.csv"
 savepath = get(sim_or_real,"save_path",0)
