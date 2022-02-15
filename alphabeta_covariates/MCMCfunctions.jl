@@ -8,7 +8,7 @@ using JSON: parsefile
 using Plots
 using Statistics: mean
 
-export hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,getα,getβ₂,initvalsλ,ΓΓ_MCMC,readjson,gridsearchdensity
+export hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,getα,getβ₂,initvalsλ,ΓΓ_MCMC,readjson
 
 struct parameter
     α::Vector{Float64}

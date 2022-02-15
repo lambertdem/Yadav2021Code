@@ -4,13 +4,13 @@ using Random: rand,seed!
 using Plots: plot, abline!
 
 include("MCMCfunctions.jl")
-using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson,gridsearchdensity,getβ₂
+using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson
 include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, compareQQ, preddens
 
-jsonfilenm = "RunAlphaBeta2" # Do NOT add json extension
+jsonfilenm = "RunAlphaBeta1" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -34,6 +34,8 @@ if sim == true
     
     # Get remaining simulation JSON data
     _,_,_,_,trueθ = readjson(jsonpath)
+    display(trueθ)
+    display(reparameterize(trueθ))
 
     # Generate simulated Y data
     Y,X₁,trueλ = simulation(distm,trueθ,covars,hypers)
@@ -71,7 +73,6 @@ else
     # Create censoring threshold
     u_path = get(sim_or_real,"u_path",0)
     u = Matrix{Float64}(CSV.read(u_path,DataFrame))
-
 end
 
 # Boxplot of Y
@@ -81,11 +82,6 @@ boxplot(Y)
 
 # Get sensible initial λ values based on initθ
 λ = initvalsλ(initθ,covars,hypers)
-
-# filenm = "Run3_2022-02-09T12-46-43-964.csv"
-# savepath = get(sim_or_real,"save_path",0)
-# prev_chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))[:,8:end]
-# λ = exp.(reshape([mean(prev_chains[:,i]) for i in 1:size(prev_chains)[2]],hypers.ntimes,hypers.nsites))
 
 # Get the censoring indices
 indcens = findall(x->x==1,Y.<u)
@@ -102,25 +98,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-# mcmc2 = mcmc(hypers.niters, # Number of iterations
-#             Y,      # Observed data
-#             covars, # Covariates for the model
-#             distm,  # Distance matrix
-#             u,      # Censoring threshold
-#             trueθ,      # Model parameters
-#             trueλ,      # Latent variables
-#             hypers, # hyperparameters
-#             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
-
-# param = 2
-# loglik,pars=gridsearchdensity(mcmc2,param)
-# m = hcat(pars,loglik)
-# m = m[findall(!isnan, m[:,2]),:]
-# display(plot(m[:,1],m[:,2],legend=:none,seriestype = :scatter))
-# reparameterize(trueθ)
-
-@time chains,τs = ΓΓ_MCMC(mcmc1)
-chains
+# @time chains,τs = ΓΓ_MCMC(mcmc1)
+# chains
 
 filenm = "RunAlphaBeta1_2022-02-10T16-06-03-788.csv"
 savepath = get(sim_or_real,"save_path",0)
@@ -137,4 +116,4 @@ fittedθ = deparameterize(fittedtildeθ)
 
 compareQQ(Y,covars,trueθ,fittedθ,hypers)
 
-preddens(fittedθ,covars,hypers,[1,1],[0,300])
+# preddens(fittedθ,covars,hypers,[1,1],[0,300])
