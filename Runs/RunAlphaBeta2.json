@@ -10,12 +10,12 @@
   },
   "real_data": {
     "yesno": true,
-    "data_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021Code\\Runs\\Y.csv"
+    "data_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\ObservationsHQ.csv"
   },
   "hyperparameters": {
     "seed": 4,
-    "nsites": 20,
-    "ntimes": 50,
+    "nsites": 5,
+    "ntimes": 2192,
     "kappa1": 3,
     "kappa2": 3,
     "sigmaproptheta": [100.0,50.0,100.0,1.0,100.0,100.0,50.0,1000.0],
@@ -41,8 +41,8 @@
       "beta2": [1.0,0.0],
       "rho": 1.0
     },
-    "loc_m_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021Code\\Runs\\loc_m.csv",
-    "covars_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021Code\\Runs\\covars.csv",
+    "loc_m_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\loc_mHQ.csv",
+    "covars_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\PrevisionsHQ.csv",
     "u_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021Code\\Runs\\u.csv",
     "save_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Output\\"
   }
