@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, compareQQ, preddens
 
-jsonfilenm = "RunAlphaBeta1" # Do NOT add json extension
+jsonfilenm = "RunAlphaBeta2" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -65,6 +65,7 @@ else
     # Create an artifical covariance matrix with 3 predictor variables
     covars_path = get(sim_or_real,"covars_path",0)
     covars = Matrix{Float64}(CSV.read(covars_path,DataFrame))
+    print(size(covars))
 
     # Get Y data
     Y_path = get(realdata,"data_path",0)
@@ -72,7 +73,7 @@ else
 
     # Create censoring threshold
     u_path = get(sim_or_real,"u_path",0)
-    u = Matrix{Float64}(CSV.read(u_path,DataFrame))
+    u = reshape(repeat(Matrix{Float64}(CSV.read(u_path,DataFrame)),hypers.ntimes),hypers.ntimes,hypers.nsites)
 end
 
 # Boxplot of Y
@@ -98,8 +99,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-# @time chains,τs = ΓΓ_MCMC(mcmc1)
-# chains
+@time chains,τs = ΓΓ_MCMC(mcmc1)
+chains
 
 filenm = "RunAlphaBeta1_2022-02-10T16-06-03-788.csv"
 savepath = get(sim_or_real,"save_path",0)
