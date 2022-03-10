@@ -9,7 +9,7 @@ using .MCMCfit: parameter, getα
 include("Simulations.jl")
 using .simulations: testYmargins
 
-export plotθλ, compareQQ, preddens
+export plotθλ, compareQQ, preddens, getQQ
 
 function getθvec(θ)
     return vcat(θ.α,θ.β₁,θ.β₂,θ.ρ)
@@ -50,6 +50,14 @@ function compareQQ(Y,covars,trueθ,fittedθ,hypers)
     for i in 0:convert(Int64,size(Y)[2]/5)
         display(plot(p[collect((8*i+1):(8*i+8))]...,layout=(4,2)))
     end
+end
+
+function getQQ(Y,covars,fittedθ,hypers)
+    p = fill(plot(),size(Y)[2],1)
+    for i in 1:(size(Y)[2])
+        p[i] = testYmargins(Y,covars,fittedθ,i,hypers,false)
+    end
+    display(plot(p...))
 end
 
 function preddens(fittedθ,covars,hypers,ind,range)

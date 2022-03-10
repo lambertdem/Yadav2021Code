@@ -8,7 +8,7 @@ using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparame
 include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
-using .results: plotθλ, compareQQ, preddens
+using .results: plotθλ, getQQ, compareQQ, preddens
 
 jsonfilenm = "RunAlphaBeta2" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
@@ -102,19 +102,29 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
 @time chains,τs = ΓΓ_MCMC(mcmc1)
 chains
 
-filenm = "RunAlphaBeta1_2022-02-10T16-06-03-788.csv"
+filenm = "RunAlphaBeta2_2022-03-10T15-35-41-201.csv"
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
-plotθλ(chains,reparameterize(trueθ),trueλ,[111,222,555,777])
-
-fittedtildeθ = parameter([mean(chains[:,i]) for i in 1:size(trueθ.α)[1]],
-                    mean(chains[:,size(trueθ.α)[1]+1]),
-                    [mean(chains[:,size(trueθ.α)[1]+i+1]) for i in 1:size(trueθ.β₂)[1]],
-                    mean(chains[:,size(trueθ.α)[1]+size(trueθ.β₂)[1]+2]))
+burn = 1000
+fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1]],
+                    mean(chains[burn:end,size(initθ.α)[1]+1]),
+                    [mean(chains[burn:end,size(initθ.α)[1]+i+1]) for i in 1:size(initθ.β₂)[1]],
+                    mean(chains[burn:end,size(initθ.α)[1]+size(initθ.β₂)[1]+2]))
 
 fittedθ = deparameterize(fittedtildeθ)
 
+##############
+# Simulation #
+##############
+
+plotθλ(chains,reparameterize(trueθ),trueλ,[111,222,555,777])
 compareQQ(Y,covars,trueθ,fittedθ,hypers)
+
+#############
+# Real Data #
+#############
+
+getQQ(Y,covars,fittedθ,hypers)
 
 # preddens(fittedθ,covars,hypers,[1,1],[0,300])
