@@ -4,7 +4,7 @@ using Random: rand,seed!
 using Plots: plot, abline!
 
 include("MCMCfunctions.jl")
-using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson
+using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson,plotθ
 include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
@@ -124,7 +124,7 @@ compareQQ(Y,covars,trueθ,fittedθ,hypers)
 #############
 # Real Data #
 #############
-
+plotθ()
 getQQ(Y,covars,fittedθ,hypers)
 
 # preddens(fittedθ,covars,hypers,[1,1],[0,300])
