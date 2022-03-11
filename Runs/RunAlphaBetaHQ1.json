@@ -1,0 +1,49 @@
+{
+  "simulation": {
+    "yesno": false,
+    "true_theta":{
+      "alpha": [],
+      "beta1": 0.0,
+      "beta2": [],
+      "rho": 0.0
+    }
+  },
+  "real_data": {
+    "yesno": true,
+    "data_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Extr_obs_HQ.csv"
+  },
+  "hyperparameters": {
+    "seed": 4,
+    "nsites": 5,
+    "ntimes": 294,
+    "kappa1": 3,
+    "kappa2": 3,
+    "sigmaproptheta": [10.0,1.0,1.0,10.0,1.0,1.0,10.0,10.0],
+    "tau_theta": 0.001,
+    "tau_lambda": 0.001,
+    "delta_gradnumer": 0.0001,
+    "n_iter": 1500000,
+    "n_thin": 250,
+    "nadapt": 1000,
+    "burnin1": 250000,
+    "burnin2": 750000,
+    "targt_accept_tau": [0.57,0.23],
+    "bound_targt_accpt_tau_theta": [0.5,0.67],
+    "bound_targt_accpt_tau_lambda": [0.15,0.3],
+    "w": [0.4,2.0],
+    "covars_alpha": [1,2],
+    "covars_beta2": [0,0]
+  },
+  "sim_or_real": {
+    "init_theta":{
+      "alpha": [1.0,0.0,0.0],
+      "beta1": 1.0,
+      "beta2": [1.0],
+      "rho": 1.0
+    },
+    "loc_m_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\loc_mHQ.csv",
+    "covars_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Covars_HQ.csv",
+    "u_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\u_HQ.csv",
+    "save_path": "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Output\\"
+  }
+}

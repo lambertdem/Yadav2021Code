@@ -106,9 +106,14 @@ function reparameterize(θ::parameter)::parameter
     α₀= θ.α[1] + log(θ.β₁) - log(θ.β₂[1])
     αₖ = θ.α[2:end]
     β₂₀ = -log(θ.β₂[1])
-    β₂ₖ = θ.β₂[2:end]
-    repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),vcat(β₂₀,β₂ₖ),log(θ.ρ))
-    return repar
+    if size(θ.β₂)[1]>1
+        β₂ₖ = θ.β₂[2:end]
+        repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),vcat(β₂₀,β₂ₖ),log(θ.ρ))
+        return repar
+    else
+        repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),β₂₀,log(θ.ρ))
+        return repar
+    end
 end
 
 """
@@ -122,9 +127,14 @@ function deparameterize(tildeθ::parameter)
     αₖ = tildeθ.α[2:end]
     β₁ = exp(tildeθ.β₁-tildeθ.α[1])
     β₂₀ = exp(-tildeθ.β₂[1])
-    β₂ₖ = tildeθ.β₂[2:end]
-    depar = parameter(vcat(α₀,αₖ),β₁,vcat(β₂₀,β₂ₖ),exp(tildeθ.ρ))
-    return depar
+    if size(tildeθ.β₂)[1] >1
+        β₂ₖ = tildeθ.β₂[2:end]
+        depar = parameter(vcat(α₀,αₖ),β₁,vcat(β₂₀,β₂ₖ),exp(tildeθ.ρ))
+        return depar
+    else
+        depar = parameter(vcat(α₀,αₖ),β₁,[β₂₀],exp(tildeθ.ρ))
+        return depar
+    end
 end
 
 """
@@ -196,10 +206,14 @@ Convert [β₂₀,β₂₁,...,β₂ₖ] to β₂
 """
 function getβ₂(β₂_vec::Vector{Float64},covars::Matrix{Float64},nsites,ntimes)
     n = nsites*ntimes
-    if size(covars)[1] == n
-        β₂ = β₂_vec[1].*ones(size(covars)[1]) .+ covars*β₂_vec[2:end]
+    if size(β₂_vec)[1]>1
+        if size(covars)[1] == n
+            β₂ = β₂_vec[1].*ones(size(covars)[1]) .+ covars*β₂_vec[2:end]
+        else
+            β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=ntimes)
+        end
     else
-        β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=ntimes)
+        β₂ = repeat(β₂_vec,n)
     end
     return exp.(reshape(β₂,ntimes,nsites))
 end
@@ -224,7 +238,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     Σ = getΣ(distm,ρ)
 
     α = getα(α_vec,covars[:,hypers.covarsα],nsites,ntimes)
-    β₂ = getβ₂(β₂_vec,covars[:,hypers.covarsβ₂],nsites,ntimes)
+    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],nsites,ntimes)
 
     logpriorα = sum([log(pdf(Normal(0,10),α_vec[i])) for i in 1:size(α_vec)[1]])
     logpriorβ₁= log(PCpriorβ₁(β₁,hypers.κ₁))
@@ -237,7 +251,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     for i in 1:ntimes logdens += log(pdf(MvNormal(zeros(nsites),Σ),Zᵢⱼ[i,:])) end
     for i in 1:n logdens += log(pdf(Gamma(β₂[i],1/α[i]),λ[i])) - log(pdf(Normal(0,1),Zᵢⱼ[i])) end
     return logdens
-end 
+end
 
 """
 Compute the log density of the data evaluated at tildeλ, tildeθ

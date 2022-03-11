@@ -64,7 +64,6 @@ function testYmargins(Y,covars,θ,column,hypers,qqplot=true)
         display(p)
     end
     return(p)
-
 end
 
 function boxplot(Y)

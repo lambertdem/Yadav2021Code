@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens
 
-jsonfilenm = "RunAlphaBeta2" # Do NOT add json extension
+jsonfilenm = "RunAlphaBetaHQ" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -99,10 +99,10 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-@time chains,τs = ΓΓ_MCMC(mcmc1)
-chains
+# @time chains,τs = ΓΓ_MCMC(mcmc1)
+# chains
 
-filenm = "RunAlphaBeta2_2022-03-10T15-35-41-201.csv"
+filenm = "RunAlphaBetaHQ_2022-03-10T15-35-41-201.csv"
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
@@ -118,13 +118,12 @@ fittedθ = deparameterize(fittedtildeθ)
 # Simulation #
 ##############
 
-plotθλ(chains,reparameterize(trueθ),trueλ,[111,222,555,777])
-compareQQ(Y,covars,trueθ,fittedθ,hypers)
+# plotθλ(chains,reparameterize(trueθ),trueλ,[111,222,555,777])
+# compareQQ(Y,covars,trueθ,fittedθ,hypers)
 
 #############
 # Real Data #
 #############
-plotθ()
 getQQ(Y,covars,fittedθ,hypers)
 
 # preddens(fittedθ,covars,hypers,[1,1],[0,300])
