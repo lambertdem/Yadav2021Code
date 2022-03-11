@@ -18,7 +18,7 @@
     "ntimes": 294,
     "kappa1": 3,
     "kappa2": 3,
-    "sigmaproptheta": [10.0,1.0,1.0,10.0,1.0,1.0,10.0,10.0],
+    "sigmaproptheta": [100.0,1.0,1.0,100.0,100.0,100.0],
     "tau_theta": 0.001,
     "tau_lambda": 0.001,
     "delta_gradnumer": 0.0001,
@@ -32,7 +32,7 @@
     "bound_targt_accpt_tau_lambda": [0.15,0.3],
     "w": [0.4,2.0],
     "covars_alpha": [1,2],
-    "covars_beta2": [0,0]
+    "covars_beta2": [0]
   },
   "sim_or_real": {
     "init_theta":{

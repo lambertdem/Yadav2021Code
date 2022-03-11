@@ -111,7 +111,7 @@ function reparameterize(θ::parameter)::parameter
         repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),vcat(β₂₀,β₂ₖ),log(θ.ρ))
         return repar
     else
-        repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),β₂₀,log(θ.ρ))
+        repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),[β₂₀],log(θ.ρ))
         return repar
     end
 end
@@ -204,18 +204,19 @@ Convert [β₂₀,β₂₁,...,β₂ₖ] to β₂
  - nsites: number of sites considered
  - ntimes: number of times considered for each location
 """
-function getβ₂(β₂_vec::Vector{Float64},covars::Matrix{Float64},nsites,ntimes)
-    n = nsites*ntimes
+function getβ₂(β₂_vec::Vector{Float64},covars::Matrix{Float64},hypers)
+    n = hypers.nsites*hypers.ntimes
     if size(β₂_vec)[1]>1
+        covars = covars[:,hypers.covarsβ₂]
         if size(covars)[1] == n
             β₂ = β₂_vec[1].*ones(size(covars)[1]) .+ covars*β₂_vec[2:end]
         else
-            β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=ntimes)
+            β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=hypers.ntimes)
         end
     else
         β₂ = repeat(β₂_vec,n)
     end
-    return exp.(reshape(β₂,ntimes,nsites))
+    return exp.(reshape(β₂,hypers.ntimes,hypers.nsites))
 end
 
 """
@@ -238,7 +239,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     Σ = getΣ(distm,ρ)
 
     α = getα(α_vec,covars[:,hypers.covarsα],nsites,ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],nsites,ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
 
     logpriorα = sum([log(pdf(Normal(0,10),α_vec[i])) for i in 1:size(α_vec)[1]])
     logpriorβ₁= log(PCpriorβ₁(β₁,hypers.κ₁))
@@ -314,7 +315,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (l
 """
 function ∇logpostλ_t(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],nsites,ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
     β₁ = θ.β₁; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
     loggrad = Array{Float64}(undef,hypers.ntimes,hypers.nsites)
@@ -354,7 +355,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (V
 """
 function ∇logpostλ_t1(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],hypers.nsites,hypers.ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
     β₁ = θ.β₁; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
     loggrad = Array{Float64}(undef,hypers.ntimes,hypers.nsites)
@@ -510,7 +511,7 @@ Obtain sensible initial values for λ
 """
 function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],hypers.nsites,hypers.ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
     initλ = quantile.(Gamma.(β₂,(1.)./α),0.5)
     return initλ
 end 
@@ -529,7 +530,7 @@ function plotθ(chains::Matrix{Float64},θ::parameter)
         Plots.abline!(0,quantile(chains[:,j],0.025),linecolor=[:orange])
         Plots.abline!(0,quantile(chains[:,j],0.975),linecolor=[:orange])
     end
-    display(plot(p...,layout =(2,4),size=(2400,1800)))
+    display(plot(p...,size=(2400,1800)))
 end
 
 """
