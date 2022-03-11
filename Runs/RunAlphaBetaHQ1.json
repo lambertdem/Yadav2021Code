@@ -18,7 +18,7 @@
     "ntimes": 294,
     "kappa1": 3,
     "kappa2": 3,
-    "sigmaproptheta": [100.0,1.0,1.0,100.0,100.0,100.0],
+    "sigmaproptheta": [100.0,1.0,2.0,100.0,100.0,500.0],
     "tau_theta": 0.001,
     "tau_lambda": 0.001,
     "delta_gradnumer": 0.0001,
