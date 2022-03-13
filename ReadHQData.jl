@@ -90,15 +90,31 @@ test = DataFrames.DataFrame(vars,:auto)
 rename!(test,[:Max_Prevs,:Sum_Prevs,:Sum_Std])
 predict(logit,test)
 
-sum(df[:,1])
-size(df)
-
 preds = []
 for i in 1:size(df)[1]
+    println(i)
     train = df[1:end .!= i,:]
     test = DataFrames.DataFrame(reshape([df[i,12:end][j] for j in 1:3],1,3),:auto)
     rename!(test,[:Max_Prevs,:Sum_Prevs,:Sum_Std])
     logit = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std),train,Binomial(),LogitLink())
     pred = predict(logit,test)
+    preds = vcat(preds,pred)
 end
+
+sorted_df = sort(DataFrame(hcat(preds,df[:,1]),:auto),:x1)
+
+est_ps = []
+for i in 1:10
+    ind = findall(x-> x>0.0 +0.1*(i-1) && x<= 0.1*i,sorted_df[:,1])
+    est_p = sum(sorted_df[ind,2])/size(sorted_df[ind,2])[1]
+    est_ps = vcat(est_ps,est_p)
+end
+
+plot(preds,df[:,1],seriestype= :scatter)
+plot!((1:10)/10,est_ps)
+
+plot(1:20,est_ps)
+sum(sorted_df[:,2])
+
+plot(sorted_df[:,1])
 
