@@ -102,13 +102,13 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
 # @time chains,τs = ΓΓ_MCMC(mcmc1)
 # chains
 
-filenm = "RunAlphaBetaHQ1_2022-03-12T16-21-33-299.csv"
+filenm = "RunAlphaBetaHQ1_2022-03-13T10-54-52-634.csv"
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
 plotθ(chains,initθ)
 
-burn = 3500
+burn = 1000
 fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1]],
                     mean(chains[burn:end,size(initθ.α)[1]+1]),
                     [mean(chains[burn:end,size(initθ.α)[1]+i+1]) for i in 1:size(initθ.β₂)[1]],
