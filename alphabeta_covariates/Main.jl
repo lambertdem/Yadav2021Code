@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens
 
-jsonfilenm = "RunAlphaBetaHQ1" # Do NOT add json extension
+jsonfilenm = "RunHQ1" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -102,7 +102,7 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
 # @time chains,τs = ΓΓ_MCMC(mcmc1)
 # chains
 
-filenm = "RunAlphaBetaHQ1_2022-03-13T10-54-52-634.csv"
+filenm = "RunHQ1_2022-03-13T10-54-52-634.csv"
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
