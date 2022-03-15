@@ -61,8 +61,9 @@ function getQQ(Y,covars,fittedθ,hypers)
 end
 
 function preddens(fittedθ,covars,hypers,ind,range)
-    α = getα(fittedθ.α,covars,hypers.nsites,hypers.ntimes)
-    β₁ = fittedθ.β₁; β₂ = fittedθ.β₂
+    α = getα(fittedθ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
+    β₂ = getβ₂(fittedθ.β₂,covars,hypers)
+    β₁ = fittedθ.β₁;
     αᵢⱼ = α[ind[1],ind[2]]
     f(x) = αᵢⱼ^(-β₁)*gamma(β₁+β₂)*(1+x/αᵢⱼ)^(-β₁-β₂)*x^(β₁-1)/(gamma(β₁)*gamma(β₂))
     display(plot(f,range[1],range[2]))

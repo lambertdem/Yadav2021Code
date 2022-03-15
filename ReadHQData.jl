@@ -83,8 +83,8 @@ df[!,"Sum_Std"] = [sum(df[i,7:11]) for i in 1:size(df)[1]]
 df
 
 
-logit = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std),df,Binomial(),LogitLink())
-
+logit = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std+Sum_Prevs*Sum_Std),df,Binomial(),LogitLink())
+logit
 vars = reshape([20.0,22.0,0.0],1,3)
 test = DataFrames.DataFrame(vars,:auto)
 rename!(test,[:Max_Prevs,:Sum_Prevs,:Sum_Std])
@@ -96,7 +96,7 @@ for i in 1:size(df)[1]
     train = df[1:end .!= i,:]
     test = DataFrames.DataFrame(reshape([df[i,12:end][j] for j in 1:3],1,3),:auto)
     rename!(test,[:Max_Prevs,:Sum_Prevs,:Sum_Std])
-    logit = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std),train,Binomial(),LogitLink())
+    logit = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std+Sum_Prevs*Sum_Std),train,Binomial(),LogitLink())
     pred = predict(logit,test)
     preds = vcat(preds,pred)
 end
@@ -112,6 +112,7 @@ end
 
 plot(preds,df[:,1],seriestype= :scatter)
 plot!((1:10)/10,est_ps)
+abline!(1,0)
 
 plot(1:20,est_ps)
 sum(sorted_df[:,2])
