@@ -5,11 +5,11 @@ using Statistics
 using Distributions: pdf, FDist
 using SpecialFunctions: gamma
 include("MCMCfunctions.jl")
-using .MCMCfit: parameter, getα
+using .MCMCfit: parameter,getα,getθvec,getθobj
 include("Simulations.jl")
 using .simulations: testYmargins
 
-export plotθλ, compareQQ, preddens, getQQ
+export plotθλ, compareQQ, preddens, getQQ, posterior_pred
 
 function getθvec(θ)
     return vcat(θ.α,θ.β₁,θ.β₂,θ.ρ)
@@ -60,13 +60,26 @@ function getQQ(Y,covars,fittedθ,hypers)
     display(plot(p...))
 end
 
-function preddens(fittedθ,covars,hypers,ind,range)
-    α = getα(fittedθ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(fittedθ.β₂,covars,hypers)
+function preddens(fittedθ,covarsα,covarsβ₂,range)
+    α = fittedθ.α[1] + sum(fittedθ.α[2:end].*covarsα)
+    β₂ = fittedθ.β₂[1] + sum(ifelse(size(fittedθ.β₂)[1]==1,0,fittedθ.β₂[2:end].*covarsβ₂))
     β₁ = fittedθ.β₁;
-    αᵢⱼ = α[ind[1],ind[2]]
-    f(x) = αᵢⱼ^(-β₁)*gamma(β₁+β₂)*(1+x/αᵢⱼ)^(-β₁-β₂)*x^(β₁-1)/(gamma(β₁)*gamma(β₂))
+    f(x) = α^(-β₁)*gamma(β₁+β₂)*(1+x/α)^(-β₁-β₂)*x^(β₁-1)/(gamma(β₁)*gamma(β₂))
     display(plot(f,range[1],range[2]))
+end
+
+function posterior_pred(burnin,chains,fittedθ,dist_m)
+    sizeθ = size(getθvec(fittedθ))[1]
+    chains = chains[burnin:end,1:sizeθ]
+    d = size(dist_m)[1]
+
+    for i in 1:1 #size(chains)[1]
+        #generate MVN vector
+        θ = getθobj(chains[i,:],fittedθ)
+        μ = zeros(d)
+        Σ = exp.(-dist_m/θ.ρ)
+        return(rand(MvNormal(μ,Σ),1))
+    end
 end
 
 end

@@ -1,4 +1,4 @@
-using DataFrames, CSV, Statistics, Plots, GLM
+using DataFrames, CSV, Statistics, Plots, GLM, MLBase, Distributions
 
 path = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\"
 obs = Matrix{Float64}(CSV.read(string(path,"ObservationsHQ.csv"),DataFrame,header=0))
@@ -112,10 +112,26 @@ end
 
 plot(preds,df[:,1],seriestype= :scatter)
 plot!((1:10)/10,est_ps)
-abline!(1,0)
+Plots.abline!(1,0)
 
 plot(1:20,est_ps)
 sum(sorted_df[:,2])
 
 plot(sorted_df[:,1])
 
+bin_pred = [ifelse(x<0.5,0,1) for x in preds]
+confsn_mtrx = MLBase.roc(convert.(Int64,df[:,1]),bin_pred)
+
+precision = confsn_mtrx.tp/(confsn_mtrx.tp+confsn_mtrx.fp)
+recall = confsn_mtrx.tp/(confsn_mtrx.tp+confsn_mtrx.fn)
+
+
+logit0 = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs),df,Binomial(),LogitLink())
+logit1 = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std),df,Binomial(),LogitLink())
+logit2 = glm(@formula(x1 ~ Max_Prevs+Sum_Prevs+Sum_Std+Sum_Prevs*Sum_Std),df,Binomial(),LogitLink())
+lik_ratio_test = deviance(logit1) - deviance(logit2)
+
+1-Distributions.cdf(Distributions.Chisq(1),lik_ratio_test)
+
+plot(df[:,"Sum_Std"],df[:,1],seriestype=:scatter)
+plot(df[:,"Sum_Std"].*df[:,"Sum_Prevs"],df[:,1],seriestype=:scatter)

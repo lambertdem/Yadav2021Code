@@ -56,16 +56,17 @@ else
 
     # Get the location matrix for weather sites
     locm_path = get(sim_or_real,"loc_m_path",0)
-    loc_m = Matrix{Float64}(CSV.read(locm_path,DataFrame))
+    csv_loc_m = CSV.read(locm_path,DataFrame,header=0)[:,2:3]
+    loc_m = Matrix{Float64}(csv_loc_m)
     distm= distmatrix(loc_m)
 
     # Plot site locations
     # display(plot(loc_m[:,1],loc_m[:,2], seriestype = :scatter, title = "Locations"))
 
-    # Create an artifical covariance matrix with 3 predictor variables
+    # Get predictive variables matrix
     covars_path = get(sim_or_real,"covars_path",0)
-    covars = Matrix{Float64}(CSV.read(covars_path,DataFrame))
-    print(size(covars))
+    covars_csv = CSV.read(covars_path,DataFrame)
+    covars = Matrix{Float64}(covars_csv)
 
     # Get Y data
     Y_path = get(realdata,"data_path",0)
@@ -103,6 +104,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
 # chains
 
 filenm = "RunHQ2_2022-03-14T21-20-13-905.csv"
+# filenm = "RunHQ3_2022-03-18T13-40-04-923.csv"
+
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
@@ -116,6 +119,12 @@ fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1
 
 fittedθ = deparameterize(fittedtildeθ)
 
+α = fittedθ.α[1] + 40*fittedθ.α[2]
+β₂ = fittedθ.β₂[1]
+exp1 = β₂/α
+expY = fittedθ.β₁/exp1
+
+
 ##############
 # Simulation #
 ##############
@@ -128,4 +137,6 @@ fittedθ = deparameterize(fittedtildeθ)
 #############
 getQQ(Y,covars,fittedθ,hypers)
 
-preddens(fittedθ,covars,hypers,[1,1],[0,300])
+covarsα = [0]
+covarsβ₂ = []
+preddens(fittedθ,covarsα,covarsβ₂,[0,50])
