@@ -8,7 +8,7 @@ using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparame
 include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
-using .results: plotθλ, getQQ, compareQQ, preddens
+using .results: plotθλ, getQQ, compareQQ, preddens, posterior_pred
 
 jsonfilenm = "RunHQ2" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
@@ -135,8 +135,10 @@ expY = fittedθ.β₁/exp1
 #############
 # Real Data #
 #############
-getQQ(Y,covars,fittedθ,hypers)
+# getQQ(Y,covars,fittedθ,hypers)
 
-covarsα = [0]
-covarsβ₂ = []
-preddens(fittedθ,covarsα,covarsβ₂,[0,50])
+# covarsα = [30]
+# covarsβ₂ = []
+# preddens(fittedθ,covarsα,covarsβ₂,[0,100])
+
+posterior_pred(burn,chains,fittedθ,distm)

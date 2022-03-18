@@ -2,10 +2,10 @@ module results
     
 using Plots: plot, abline!
 using Statistics
-using Distributions: pdf, FDist
+using Distributions: pdf,cdf,FDist,Normal,MvNormal,Gamma
 using SpecialFunctions: gamma
 include("MCMCfunctions.jl")
-using .MCMCfit: parameter,getα,getθvec,getθobj
+using .MCMCfit: parameter,getα
 include("Simulations.jl")
 using .simulations: testYmargins
 
@@ -14,6 +14,13 @@ export plotθλ, compareQQ, preddens, getQQ, posterior_pred
 function getθvec(θ)
     return vcat(θ.α,θ.β₁,θ.β₂,θ.ρ)
 end
+
+function getθobj(vec,θ)
+    nₐ = size(θ.α)[1]
+    nᵦ₂ = size(θ.β₂)[1]
+    return parameter(vec[1:nₐ],vec[nₐ+1],vec[nₐ+2:nₐ+nᵦ₂+1],vec[nₐ+nᵦ₂+2])
+end
+
 
 function plotθλ(chains::Matrix{Float64},trueθ,trueλ,λind)
     n = size(trueθ.α)[1] + size(trueθ.β₂)[1] + 2 + size(λind)[1]
@@ -76,9 +83,12 @@ function posterior_pred(burnin,chains,fittedθ,dist_m)
     for i in 1:1 #size(chains)[1]
         #generate MVN vector
         θ = getθobj(chains[i,:],fittedθ)
+        α = θ.α[1] #.+ fittedθ.α[2:end].*covarsα
         μ = zeros(d)
         Σ = exp.(-dist_m/θ.ρ)
-        return(rand(MvNormal(μ,Σ),1))
+        MvN = rand(MvNormal(μ,Σ),1)
+        u_scale = cdf.(Normal(0,1),MvN)
+        λ = [quantile.(Gamma(θ.β₂,(1.)/θ.α[i]),u_scale[i]) for i in 1:size(u_scale)[1]]
     end
 end
 
