@@ -569,6 +569,7 @@ function ΓΓ_MCMC(init::mcmc)
     changeλind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     changeθind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     ∇logtildeλ = tilde∇logpostλ(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
+    logtildeθ = tildelogpost(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
 
     for i in 1:(init.n_it-1)
         if i<50000 && mod(i,10000)==0
@@ -595,7 +596,10 @@ function ΓΓ_MCMC(init::mcmc)
             logliktildeθ = logliktildeλ # Same value and already computed in last iteration
         end
         loglikproptildeθ = tildelogpost(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,hypers)
-
+        if i == 1
+            println(loglikproptildeθ)
+            
+        end
         if log(rand(Uniform(),1)[1]) < loglikproptildeθ - logliktildeθ
             logliktildeθ = loglikproptildeθ # So there is no need to recompute logliktildeλ after
             tildeθ = proptildeθ

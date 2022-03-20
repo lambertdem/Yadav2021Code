@@ -246,6 +246,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     logpriorβ₂= log(PCpriorβ₂(β₂_vec[1],hypers.κ₂)) + sum([log(pdf(Normal(0,10),β₂_vec[i])) for i in 2:size(β₂_vec)[1]])
     logpriorρ = log(pdf(Gamma(0.01,100.),ρ))
     logdens = logpriorα+logpriorβ₁+logpriorβ₂+logpriorρ
+    test = (1.)./λ
     for i in indnocens logdens += log(pdf(Gamma(β₁,(1.)/λ[i]),Y[i])) end
     for i in indcens logdens += log(cdf(Gamma(β₁,1),u[i]*λ[i])) end
     Zᵢⱼ = [quantile(Normal(0,1),cdf(Gamma(β₂[i,j],1/α[i,j]),λ[i,j])) for i in 1:ntimes, j in 1:nsites]
@@ -293,10 +294,13 @@ function tilde∇logpostθ_n(Y::Matrix{Float64},logλ::Matrix{Float64},covars::M
     θvec = getθvec(tildeθ)
     ∇ = copy(θvec)
     for i in 1:size(θvec)[1]
-        θvec₊ = θvec; θvec₋ = θvec
+        θvec₊ = copy(θvec); θvec₋ = copy(θvec)
         θvec₊[i] += hypers.δ_∇numer; θvec₋[i] -= hypers.δ_∇numer
         θ₊ = getθobj(θvec₊,tildeθ); θ₋ = getθobj(θvec₋,tildeθ)
         ∇[i] = (tildelogpost(Y,logλ,covars,θ₊,distm,indcens,indnocens,u,hypers)-tildelogpost(Y,logλ,covars,θ₋,distm,indcens,indnocens,u,hypers))/(2*hypers.δ_∇numer)
+    end
+    if size(findall(x->x==-Inf,∇))[1] >0 || size(findall(isnan.(∇)))[1] >0
+        return zeros(size(θvec)[1])
     end
     return ∇
 end
@@ -436,7 +440,7 @@ function θproposal(tildeθ::parameter,∇tildeθ::Vector{Float64},τ::Vector{Fl
 end
 
 """
-Compute density of the θ proposal distribution at tildeθprop
+Compute density of the θ proposal distribution at proptildeθ
 
 # Arguments
  - logλ: log of latent parameters λ
@@ -444,11 +448,11 @@ Compute density of the θ proposal distribution at tildeθprop
  - logλprop: New logλ candidate
  - hypers: hyperparameters of the model
 """
-function logdensθprop(tildeθ::parameter,∇tildeθ::Vector{Float64},tildeθprop::parameter,τ::Vector{Float64},hypers::hyperparameter)
-    tildeθvec = getθvec(tildeθ); tildeθpropvec = getθvec(tildeθprop)
+function logdensθprop(tildeθ::parameter,∇tildeθ::Vector{Float64},proptildeθ::parameter,τ::Vector{Float64},hypers::hyperparameter)
+    tildeθvec = getθvec(tildeθ); proptildeθvec = getθvec(proptildeθ)
     μ = tildeθvec .+ τ[1] * hypers.σpropθ .*∇tildeθ/2
     logdensθ = 0
-    for i in 1:size(tildeθvec)[1] logdensθ += log(pdf(Normal(μ[i],sqrt(τ[1]*hypers.σpropθ[i])),tildeθpropvec[i])) end
+    for i in 1:size(tildeθvec)[1] logdensθ += log(pdf(Normal(μ[i],sqrt(τ[1]*hypers.σpropθ[i])),proptildeθvec[i])) end
     return logdensθ
 end
 
@@ -569,12 +573,12 @@ function plotθ(chains::Matrix{Float64},θ::parameter,λ_ind::Vector{Int64})
     txt = vcat(txt,["λ"*string(i) for i in λ_ind])
     p = fill(plot(),n,1)
     for j in 1:size(txt)[1]
-        p[j] = plot(chains[:,j],title=txt[j])
+        p[j] = plot(chains[:,j],title=txt[j],legend=:none)
         Plots.abline!(0,mean(chains[:,j]),linecolor=[:red])
         Plots.abline!(0,quantile(chains[:,j],0.025),linecolor=[:orange])
         Plots.abline!(0,quantile(chains[:,j],0.975),linecolor=[:orange])
     end
-    display(plot(p...,size=(2400,1800)))
+    display(plot(p...,size=(2400,1800),legend=:none))
 end
 
 """
@@ -612,6 +616,7 @@ function ΓΓ_MCMC(init::mcmc)
     changeλind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     changeθind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     ∇logtildeλ = tilde∇logpostλ(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
+    logtildeθ = tildelogpost(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
 
     for i in 1:(init.n_it-1)
         if i<50000 && mod(i,10000)==0
@@ -640,9 +645,9 @@ function ΓΓ_MCMC(init::mcmc)
         end
         loglikproptildeθ = tildelogpost(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,hypers)
 
-        curtopropθ = logdensθprop(tildeθ,∇tildeθ,tildeθprop,τ,hypers)
+        curtopropθ = logdensθprop(tildeθ,∇tildeθ,proptildeθ,τ,hypers)
         ∇proptildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,τ,hypers)
-        proptocurθ = logdensθprop(tildeθprop,∇proptildeθ,tildeθ,τ,hypers)
+        proptocurθ = logdensθprop(proptildeθ,∇proptildeθ,tildeθ,τ,hypers)
 
         if log(rand(Uniform(),1)[1]) < loglikproptildeθ - logliktildeθ + proptocurθ - curtopropθ
             logliktildeθ = loglikproptildeθ # So there is no need to recompute logliktildeλ after

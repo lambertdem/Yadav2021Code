@@ -3,7 +3,7 @@ using Distributions: pdf,cdf,quantile,Uniform,Gamma,Normal,MvNormal,FDist
 using Random: rand,seed!
 using Plots: plot, abline!
 
-include("MCMCfunctions.jl")
+include("MCMCfunctions1.jl")
 using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson,plotθ
 include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
@@ -58,9 +58,7 @@ else
     locm_path = get(sim_or_real,"loc_m_path",0)
     csv_loc_m = CSV.read(locm_path,DataFrame,header=0)[:,2:3]
     loc_m = Matrix{Float64}(csv_loc_m)
-    display(loc_m)
     distm= distmatrix(loc_m)
-    display(distm)
 
     # Plot site locations
     # display(plot(loc_m[:,1],loc_m[:,2], seriestype = :scatter, title = "Locations"))
@@ -80,7 +78,7 @@ else
 end
 
 # Boxplot of Y
-boxplot(Y)
+# boxplot(Y)
 # Test margins against trueθ
 # testYmargins(Y,covars,trueθ,12,hypers,true)
 
