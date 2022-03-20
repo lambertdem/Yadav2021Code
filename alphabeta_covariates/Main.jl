@@ -58,7 +58,9 @@ else
     locm_path = get(sim_or_real,"loc_m_path",0)
     csv_loc_m = CSV.read(locm_path,DataFrame,header=0)[:,2:3]
     loc_m = Matrix{Float64}(csv_loc_m)
+    display(loc_m)
     distm= distmatrix(loc_m)
+    display(distm)
 
     # Plot site locations
     # display(plot(loc_m[:,1],loc_m[:,2], seriestype = :scatter, title = "Locations"))
@@ -100,8 +102,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-# @time chains,τs = ΓΓ_MCMC(mcmc1)
-# chains
+@time chains,τs = ΓΓ_MCMC(mcmc1)
+chains
 
 filenm = "RunHQ2_2022-03-14T21-20-13-905.csv"
 # filenm = "RunHQ3_2022-03-18T13-40-04-923.csv"
@@ -137,8 +139,8 @@ expY = fittedθ.β₁/exp1
 #############
 # getQQ(Y,covars,fittedθ,hypers)
 
-# covarsα = [30]
+covarsα = [30,2,5,9,1]
 # covarsβ₂ = []
 # preddens(fittedθ,covarsα,covarsβ₂,[0,100])
 
-posterior_pred(burn,chains,fittedθ,distm)
+posterior_pred(burn,chains,covarsα,fittedθ,distm)

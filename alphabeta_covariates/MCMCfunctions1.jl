@@ -6,8 +6,9 @@ using LinearAlgebra: Diagonal
 using CSV,DataFrames,Dates
 using JSON: parsefile
 using Plots
+using Statistics: mean
 
-export hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,getα,getβ₂,initvalsλ,ΓΓ_MCMC,readjson,gridsearchdensity
+export hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,getα,getβ₂,initvalsλ,ΓΓ_MCMC,readjson,plotθ
 
 struct parameter
     α::Vector{Float64}
@@ -105,9 +106,14 @@ function reparameterize(θ::parameter)::parameter
     α₀= θ.α[1] + log(θ.β₁) - log(θ.β₂[1])
     αₖ = θ.α[2:end]
     β₂₀ = -log(θ.β₂[1])
-    β₂ₖ = θ.β₂[2:end]
-    repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),vcat(β₂₀,β₂ₖ),log(θ.ρ))
-    return repar
+    if size(θ.β₂)[1]>1
+        β₂ₖ = θ.β₂[2:end]
+        repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),vcat(β₂₀,β₂ₖ),log(θ.ρ))
+        return repar
+    else
+        repar = parameter(vcat(α₀,αₖ),α₀+log(θ.β₁),[β₂₀],log(θ.ρ))
+        return repar
+    end
 end
 
 """
@@ -121,14 +127,15 @@ function deparameterize(tildeθ::parameter)
     αₖ = tildeθ.α[2:end]
     β₁ = exp(tildeθ.β₁-tildeθ.α[1])
     β₂₀ = exp(-tildeθ.β₂[1])
-    β₂ₖ = tildeθ.β₂[2:end]
-    depar = parameter(vcat(α₀,αₖ),β₁,vcat(β₂₀,β₂ₖ),exp(tildeθ.ρ))
-    return depar
+    if size(tildeθ.β₂)[1] >1
+        β₂ₖ = tildeθ.β₂[2:end]
+        depar = parameter(vcat(α₀,αₖ),β₁,vcat(β₂₀,β₂ₖ),exp(tildeθ.ρ))
+        return depar
+    else
+        depar = parameter(vcat(α₀,αₖ),β₁,[β₂₀],exp(tildeθ.ρ))
+        return depar
+    end
 end
-
-θ = parameter([1.,1.,1.,],2.0,[3.0],1)
-tildeθ = reparameterize(θ)
-deparameterize(tildeθ)
 
 """
 Compute the penalized complexity (PC) prior for β₁
@@ -197,14 +204,19 @@ Convert [β₂₀,β₂₁,...,β₂ₖ] to β₂
  - nsites: number of sites considered
  - ntimes: number of times considered for each location
 """
-function getβ₂(β₂_vec::Vector{Float64},covars::Matrix{Float64},nsites,ntimes)
-    n = nsites*ntimes
-    if size(covars)[1] == n
-        β₂ = β₂_vec[1].*ones(size(covars)[1]) .+ covars*β₂_vec[2:end]
+function getβ₂(β₂_vec::Vector{Float64},covars::Matrix{Float64},hypers)
+    n = hypers.nsites*hypers.ntimes
+    if size(β₂_vec)[1]>1
+        covars = covars[:,hypers.covarsβ₂]
+        if size(covars)[1] == n
+            β₂ = β₂_vec[1].*ones(size(covars)[1]) .+ covars*β₂_vec[2:end]
+        else
+            β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=hypers.ntimes)
+        end
     else
-        β₂ = β₂_vec[1].*ones(n) .+ repeat(covars*β₂_vec[2:end],inner=ntimes)
+        β₂ = repeat(β₂_vec,n)
     end
-    return exp.(reshape(β₂,ntimes,nsites))
+    return exp.(reshape(β₂,hypers.ntimes,hypers.nsites))
 end
 
 """
@@ -227,7 +239,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     Σ = getΣ(distm,ρ)
 
     α = getα(α_vec,covars[:,hypers.covarsα],nsites,ntimes)
-    β₂ = getβ₂(β₂_vec,covars[:,hypers.covarsβ₂],nsites,ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
 
     logpriorα = sum([log(pdf(Normal(0,10),α_vec[i])) for i in 1:size(α_vec)[1]])
     logpriorβ₁= log(PCpriorβ₁(β₁,hypers.κ₁))
@@ -240,7 +252,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     for i in 1:ntimes logdens += log(pdf(MvNormal(zeros(nsites),Σ),Zᵢⱼ[i,:])) end
     for i in 1:n logdens += log(pdf(Gamma(β₂[i],1/α[i]),λ[i])) - log(pdf(Normal(0,1),Zᵢⱼ[i])) end
     return logdens
-end 
+end
 
 """
 Compute the log density of the data evaluated at tildeλ, tildeθ
@@ -261,30 +273,6 @@ function tildelogpost(Y::Matrix{Float64},logλ::Matrix{Float64},covars::Matrix{F
     logposterior = logpost(Y,exp.(logλ),covars,θ,distm,indcens,indnocens,u,hypers)
     tlogpost = logposterior + sum(logλ) -tildeθ.α[1] + tildeθ.β₁ - tildeθ.β₂[1] + tildeθ.ρ
     return tlogpost
-end
-
-"""
-Compute the numerical gradient of the log density of λ evaluated at λ, θ
-
-# Arguments
- - Y: Observed data (n x d matrix)
- - λ: log of latent parameters λ
- - covars: Covariates for the model
- - θ: Reparameterized θ
- - distm: distance matrix between sites
- - indcens: indices of censored locations and times
- - indnocens: indices of non-censored locations and times
- - u: censoring threshold matrix
- - hypers: hyperparameters of the model
-"""
-function ∇logpostλ_n(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},τ::Vector{Float64},hypers::hyperparameter)
-    gradlp = copy(λ)
-    for i in 1:hypers.ntimes,j in 1:hypers.nsites
-        λp = copy(λ); λm = copy(λ)
-        λp[i,j] += hypers.δ_∇numer; λm[i,j] -= hypers.δ_∇numer
-        gradlp[i,j] = (logpost(Y,λp,covars,θ,distm,indcens,indnocens,u,hypers)-logpost(Y,λm,covars,θ,distm,indcens,indnocens,u,hypers))/(2*hypers.δ_∇numer)
-    end
-    return gradlp
 end
 
 """
@@ -314,6 +302,30 @@ function tilde∇logpostθ_n(Y::Matrix{Float64},logλ::Matrix{Float64},covars::M
 end
 
 """
+Compute the numerical gradient of the log density of λ evaluated at λ, θ
+
+# Arguments
+ - Y: Observed data (n x d matrix)
+ - λ: log of latent parameters λ
+ - covars: Covariates for the model
+ - θ: Reparameterized θ
+ - distm: distance matrix between sites
+ - indcens: indices of censored locations and times
+ - indnocens: indices of non-censored locations and times
+ - u: censoring threshold matrix
+ - hypers: hyperparameters of the model
+"""
+function ∇logpostλ_n(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},τ::Vector{Float64},hypers::hyperparameter)
+    gradlp = copy(λ)
+    for i in 1:hypers.ntimes,j in 1:hypers.nsites
+        λp = copy(λ); λm = copy(λ)
+        λp[i,j] += hypers.δ_∇numer; λm[i,j] -= hypers.δ_∇numer
+        gradlp[i,j] = (logpost(Y,λp,covars,θ,distm,indcens,indnocens,u,hypers)-logpost(Y,λm,covars,θ,distm,indcens,indnocens,u,hypers))/(2*hypers.δ_∇numer)
+    end
+    return gradlp
+end
+
+"""
 Compute the theoretical gradient of the log density of λ evaluated at λ, θ (loop version)
 
 # Arguments
@@ -329,7 +341,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (l
 """
 function ∇logpostλ_t(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],nsites,ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
     β₁ = θ.β₁; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
     loggrad = Array{Float64}(undef,hypers.ntimes,hypers.nsites)
@@ -369,7 +381,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (V
 """
 function ∇logpostλ_t1(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],hypers.nsites,hypers.ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
     β₁ = θ.β₁; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
     loggrad = Array{Float64}(undef,hypers.ntimes,hypers.nsites)
@@ -542,10 +554,28 @@ Obtain sensible initial values for λ
 """
 function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
-    β₂ = getβ₂(θ.β₂,covars[:,hypers.covarsβ₂],hypers.nsites,hypers.ntimes)
+    β₂ = getβ₂(θ.β₂,covars,hypers)
     initλ = quantile.(Gamma.(β₂,(1.)./α),0.5)
     return initλ
 end 
+
+
+function plotθ(chains::Matrix{Float64},θ::parameter,λ_ind::Vector{Int64})
+    n = size(θ.α)[1] + size(θ.β₂)[1] + 2 + size(λ_ind)[1]
+    txt = ["α"*Char(0x2080 + i) for i in 0:(size(θ.α)[1]-1)]
+    txt = vcat(txt,"β₁")
+    txt = vcat(txt,["β₂"*Char(0x2080 + i) for i in 0:(size(θ.β₂)[1]-1)])
+    txt = vcat(txt,"ρ")
+    txt = vcat(txt,["λ"*string(i) for i in λ_ind])
+    p = fill(plot(),n,1)
+    for j in 1:size(txt)[1]
+        p[j] = plot(chains[:,j],title=txt[j])
+        Plots.abline!(0,mean(chains[:,j]),linecolor=[:red])
+        Plots.abline!(0,quantile(chains[:,j],0.025),linecolor=[:orange])
+        Plots.abline!(0,quantile(chains[:,j],0.975),linecolor=[:orange])
+    end
+    display(plot(p...,size=(2400,1800)))
+end
 
 """
 Perform MCMC sampling to obtain postetior chains for θ
@@ -579,16 +609,16 @@ function ΓΓ_MCMC(init::mcmc)
 
     logliktildeθ = 0
     logliktildeλ = 0
-    loglikθ = 0
-    loglikλ = 0
     changeλind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     changeθind = 1 # 1 if there was a change in previous iteration (need to recompute stuff)
     ∇logtildeλ = tilde∇logpostλ(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
-    ∇tildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,τ,hypers)
 
     for i in 1:(init.n_it-1)
-        if mod(i,10000) == 0
-            display(Plots.plot(chains[:,1:8]))
+        if i<50000 && mod(i,10000)==0
+            plotθ(chains[1:thincount,:],θ,[1,44,177,266])
+        end
+        if mod(i,50000) == 0
+            plotθ(chains[1:thincount,:],θ,[1,44,177,266])
         end
 
         # Update τ after 'nadapt' iterations and save resulting values
@@ -598,12 +628,8 @@ function ΓΓ_MCMC(init::mcmc)
             τmatrix[τmatrixcount,:] = τ
         end
 
-        # If no change since last θ proposal, no need to recompute gradient
-        if changeθind == 1
-            ∇tildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,τ,hypers)
-            changeθind = 0
-        end
         # Proposal of new tildeθ
+        ∇tildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,tildeθ,distm,indcens,indnocens,u,τ,hypers)
         proptildeθ = θproposal(tildeθ,∇tildeθ,τ,hypers)
 
         # loglikelihood of tildeθ and proptildeθ
@@ -614,14 +640,13 @@ function ΓΓ_MCMC(init::mcmc)
         end
         loglikproptildeθ = tildelogpost(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,hypers)
 
-        logdenscurtoprop = logdensθprop(tildeθ,∇tildeθ,proptildeθ,τ,hypers)
+        curtopropθ = logdensθprop(tildeθ,∇tildeθ,tildeθprop,τ,hypers)
         ∇proptildeθ = tilde∇logpostθ_n(Y,tildeλ,covars,proptildeθ,distm,indcens,indnocens,u,τ,hypers)
-        logdensproptocur = logdensθprop(proptildeθ,∇proptildeθ,tildeθ,τ,hypers)
+        proptocurθ = logdensθprop(tildeθprop,∇proptildeθ,tildeθ,τ,hypers)
 
-        if log(rand(Uniform(),1)[1]) < loglikproptildeθ + logdensproptocur - logliktildeθ - logdenscurtoprop
+        if log(rand(Uniform(),1)[1]) < loglikproptildeθ - logliktildeθ + proptocurθ - curtopropθ
             logliktildeθ = loglikproptildeθ # So there is no need to recompute logliktildeλ after
             tildeθ = proptildeθ
-            ∇tildeθ = ∇proptildeθ
             accptcount[1] += 1
             changeλind = 1
         end
@@ -635,7 +660,7 @@ function ΓΓ_MCMC(init::mcmc)
         proptildeλ = λproposal(tildeλ,∇logtildeλ,τ,hypers)
 
         # loglikelihood of tildeλ, proptildeλ and proposal
-        logliktildeλ = logliktildeθ; loglikλ = loglikθ # Same value and already computed in this iteration
+        logliktildeλ = logliktildeθ # Same value and already computed in this iteration
         loglikproptildeλ = tildelogpost(Y,proptildeλ,covars,tildeθ,distm,indcens,indnocens,u,hypers)
 
         logdenscurtoprop = logdensλprop(tildeλ,∇logtildeλ,proptildeλ,τ,hypers)
@@ -648,7 +673,6 @@ function ΓΓ_MCMC(init::mcmc)
             tildeλ = proptildeλ
             ∇logtildeλ = ∇logproptildeλ
             accptcount[2] += 1
-            changeθind = 1
         end
 
         # Save the new parameters and latent parameters
@@ -708,7 +732,11 @@ function readjson(pathjson::String)
                         get(initθdict,"rho",0))
         return true,hypers,sim_or_real,initθ,trueθ
     elseif get(realdata,"yesno",false) #  Perform model fitting on real data
-        print("Not done yet")
+        initθdict = get(sim_or_real,"init_theta",0)
+        initθ = parameter(get(initθdict,"alpha",0),
+                        get(initθdict,"beta1",0),
+                        get(initθdict,"beta2",0),
+                        get(initθdict,"rho",0))
         return false,hypers,sim_or_real,initθ,realdata
     else
         println("One of simulation yesno or real_data yesno must be true.")

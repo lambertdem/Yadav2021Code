@@ -75,20 +75,22 @@ function preddens(fittedθ,covarsα,covarsβ₂,range)
     display(plot(f,range[1],range[2]))
 end
 
-function posterior_pred(burnin,chains,fittedθ,dist_m)
+function posterior_pred(burnin,chains,covarsα,fittedθ,dist_m)
     sizeθ = size(getθvec(fittedθ))[1]
     chains = chains[burnin:end,1:sizeθ]
     d = size(dist_m)[1]
-
+    Ys = Array{Float64}(undef,size(chains)[1],d)
     for i in 1:1 #size(chains)[1]
         #generate MVN vector
-        θ = getθobj(chains[i,:],fittedθ)
-        α = θ.α[1] #.+ fittedθ.α[2:end].*covarsα
+        θ = getθobj(chains[i,1:sizeθ],fittedθ)
+        α = θ.α[1] .+ covarsα*θ.α[2:end]
         μ = zeros(d)
         Σ = exp.(-dist_m/θ.ρ)
         MvN = rand(MvNormal(μ,Σ),1)
         u_scale = cdf.(Normal(0,1),MvN)
-        λ = [quantile.(Gamma(θ.β₂,(1.)/θ.α[i]),u_scale[i]) for i in 1:size(u_scale)[1]]
+        λ = [quantile.(Gamma(θ.β₂,(1.)/θ.α[i]),u_scale[i]) for i in 1:d]
+        Γ₁ = rand(Gamma(trueθ.β₁,1),d)
+        Y = Γ₁./λ
     end
 end
 
