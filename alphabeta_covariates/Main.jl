@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens, posterior_pred
 
-jsonfilenm = "RunHQ2a" # Do NOT add json extension
+jsonfilenm = "RunHQ2_3mods" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -100,14 +100,15 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-# @time chains,τs = ΓΓ_MCMC(mcmc1)
-# chains
+@time chains,τs = ΓΓ_MCMC(mcmc1)
+chains
 
 filenm = "RunHQ2_2022-03-14T21-20-13-905.csv"
 # filenm = "RunHQ3_2022-03-18T13-40-04-923.csv"
 # filenm = "RunHQ2_2022-03-21T19-52-12-796.csv"
 filenm = "RunHQ2a_2022-03-21T21-42-50-842.csv"
 filenm = "RunHQ2NoCovs_2022-03-22T14-37-46-249.csv"
+filenm = "RunHQ2_3mods_2022-03-22T17-38-04-427.csv"
 
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
@@ -122,7 +123,7 @@ fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1
 
 fittedθ = deparameterize(fittedtildeθ)
 
-vars = [Statistics.var(chains[burn:end,i]) for i in 1:5]
+vars = [Statistics.var(chains[100:end,i]) for i in 1:7]
 vars/minimum(vars)
 
 # α = fittedθ.α[1] + 40*fittedθ.α[2]

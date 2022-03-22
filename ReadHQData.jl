@@ -57,7 +57,7 @@ plot(obs)
 [quantile(obs[:,i],0.9) for i in 1:size(obs)[2]]
 
 u=10
-ind_exc = sum([ifelse(obs[i,j]<u,0,1) for i in 1:size(obs)[1], j in 1:size(obs)[2]],dims=2)
+# ind_exc = sum([ifelse(obs[i,j]<u,0,1) for i in 1:size(obs)[1], j in 1:size(obs)[2]],dims=2)
 ind_exc = [ifelse(size(findall(x->x>u,obs[i,:]),1)==0,0,1) for i in 1:size(obs)[1]]
 exprt_obs = obs[findall(x->x==1,ind_exc),:]
 dims = size(exprt_obs)
@@ -70,6 +70,26 @@ covars = hcat(exprt_prevs_mean,exprt_prevs_std)
 
 # fpath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Covars_HQ.csv"
 # CSV.write(fpath,DataFrame(covars,:auto))
+
+prevs_mean1 = [Statistics.mean(prev[days_ahead,1:20,i,j][findall(!isnan,prev[days_ahead,1:20,i,j])]) for i in 1:2191,j in 1:5]
+prevs_mean2 = [Statistics.mean(prev[days_ahead,21:40,i,j][findall(!isnan,prev[days_ahead,21:40,i,j])]) for i in 1:2191,j in 1:5]
+prevs_mean3 = [Statistics.mean(prev[days_ahead,41:90,i,j][findall(!isnan,prev[days_ahead,41:90,i,j])]) for i in 1:2191,j in 1:5]
+
+u=10
+# ind_exc = sum([ifelse(obs[i,j]<u,0,1) for i in 1:size(obs)[1], j in 1:size(obs)[2]],dims=2)
+ind_exc = [ifelse(size(findall(x->x>u,obs[i,:]),1)==0,0,1) for i in 1:size(obs)[1]]
+exprt_obs = obs[findall(x->x==1,ind_exc),:]
+dims = size(exprt_obs)
+prevs_mean1 = reshape(transpose(prevs_mean1[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
+prevs_mean2 = reshape(transpose(prevs_mean2[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
+prevs_mean3 = reshape(transpose(prevs_mean3[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
+covars = hcat(prevs_mean1,prevs_mean2,prevs_mean3)
+
+for i in findall(isnan,prevs_mean2) prevs_mean2[i] = (prevs_mean1[i]+prevs_mean3[i])/2 end
+
+fpath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Covars_HQ3mods.csv"
+CSV.write(fpath,DataFrame(covars,:auto))
+
 
 #######################
 # Logistic Regression #
