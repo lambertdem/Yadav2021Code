@@ -1,16 +1,16 @@
-using PlotlyJS, DataFrames, BenchmarkTools, Dates, CSV
+using PlotlyJS, DataFrames, BenchmarkTools, Dates, CSV, Statistics
 using Distributions: pdf,cdf,quantile,Uniform,Gamma,Normal,MvNormal,FDist
 using Random: rand,seed!
 using Plots: plot, abline!
 
-include("MCMCfunctions1.jl")
+include("MCMCfunctions.jl")
 using .MCMCfit: hyperparameter,parameter,mcmc,distmatrix,reparameterize,deparameterize,initvalsλ,ΓΓ_MCMC,readjson,plotθ
 include("Simulations.jl")
 using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens, posterior_pred
 
-jsonfilenm = "RunHQ2" # Do NOT add json extension
+jsonfilenm = "RunHQ2a" # Do NOT add json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -100,16 +100,19 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-@time chains,τs = ΓΓ_MCMC(mcmc1)
-chains
+# @time chains,τs = ΓΓ_MCMC(mcmc1)
+# chains
 
 filenm = "RunHQ2_2022-03-14T21-20-13-905.csv"
 # filenm = "RunHQ3_2022-03-18T13-40-04-923.csv"
+# filenm = "RunHQ2_2022-03-21T19-52-12-796.csv"
+filenm = "RunHQ2a_2022-03-21T21-42-50-842.csv"
+filenm = "RunHQ2NoCovs_2022-03-22T14-37-46-249.csv"
 
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
-plotθ(chains,initθ)
+plotθ(chains,initθ,[1,2,3,4])
 
 burn = 1500
 fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1]],
@@ -119,10 +122,13 @@ fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1
 
 fittedθ = deparameterize(fittedtildeθ)
 
-α = fittedθ.α[1] + 40*fittedθ.α[2]
-β₂ = fittedθ.β₂[1]
-exp1 = β₂/α
-expY = fittedθ.β₁/exp1
+vars = [Statistics.var(chains[burn:end,i]) for i in 1:5]
+vars/minimum(vars)
+
+# α = fittedθ.α[1] + 40*fittedθ.α[2]
+# β₂ = fittedθ.β₂[1]
+# exp1 = β₂/α
+# expY = fittedθ.β₁/exp1
 
 
 ##############
@@ -135,7 +141,7 @@ expY = fittedθ.β₁/exp1
 #############
 # Real Data #
 #############
-# getQQ(Y,covars,fittedθ,hypers)
+getQQ(Y,covars,fittedθ,hypers)
 
 covarsα = [30,2,5,9,1]
 # covarsβ₂ = []

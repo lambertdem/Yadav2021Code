@@ -18,7 +18,7 @@
     "ntimes": 294,
     "kappa1": 3,
     "kappa2": 3,
-    "sigmaproptheta": [500.0,1.0,500.0,500.0,1000.0],
+    "sigmaproptheta": [1.0,1.0,1.0,10.0],
     "tau_theta": 0.00001,
     "tau_lambda": 0.001,
     "delta_gradnumer": 0.0001,
@@ -26,17 +26,17 @@
     "n_thin": 250,
     "nadapt": 1000,
     "burnin1": 250000,
-    "burnin2": 750000,
+    "burnin2": 1250000,
     "targt_accept_tau": [0.57,0.23],
     "bound_targt_accpt_tau_theta": [0.5,0.67],
     "bound_targt_accpt_tau_lambda": [0.15,0.3],
     "w": [0.4,2.0],
-    "covars_alpha": [1],
+    "covars_alpha": [0],
     "covars_beta2": [0]
   },
   "sim_or_real": {
     "init_theta":{
-      "alpha": [1.0,0.0],
+      "alpha": [1.0],
       "beta1": 1.0,
       "beta2": [1.0],
       "rho": 1.0

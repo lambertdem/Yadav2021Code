@@ -52,7 +52,7 @@ Obtain a Q-Q plot of marginal observations
 """
 function testYmargins(Y,covars,θ,column,hypers,qqplot=true)
     nsites = hypers.nsites; ntimes = hypers.ntimes
-    α = getα(θ.α,covars[:,hypers.covarsα],nsites,ntimes)
+    α = getα(θ.α,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
     probs = collect(1:ntimes)/(ntimes+1)
     YFscale = [β₂[i,column]*Y[i,column]/(θ.β₁*α[i,column]) for i in 1:ntimes]

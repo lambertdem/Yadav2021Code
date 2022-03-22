@@ -185,14 +185,19 @@ Convert [α₀,α₁,...,αₖ] to α
  - nsites: number of sites considered
  - ntimes: number of times considered for each location
 """
-function getα(α_vec::Vector{Float64},covars::Matrix{Float64},nsites,ntimes)
-    n = nsites*ntimes
-    if size(covars)[1] == n
-        α = α_vec[1].*ones(size(covars)[1]) .+ covars*α_vec[2:end]
+function getα(α_vec::Vector{Float64},covars::Matrix{Float64},hypers)
+    n = hypers.nsites*hypers.ntimes
+    if size(α_vec)[1]>1
+        covars = covars[:,hypers.covarsα]
+        if size(covars)[1] == n
+            α = α_vec[1].*ones(size(covars)[1]) .+ covars*α_vec[2:end]
+        else
+            α = α_vec[1].*ones(n) .+ repeat(covars*α_vec[2:end],outer=hypers.ntimes)
+        end
     else
-        α = α_vec[1].*ones(n) .+ repeat(covars*α_vec[2:end],outer=ntimes)
+        α = repeat(α_vec,n)
     end
-    return transpose(exp.(reshape(α,nsites,ntimes)))
+    return transpose(exp.(reshape(α,hypers.nsites,hypers.ntimes)))
 end
 
 """
@@ -238,7 +243,7 @@ function logpost(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},
     α_vec= θ.α; β₁ = θ.β₁; β₂_vec = θ.β₂; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
 
-    α = getα(α_vec,covars[:,hypers.covarsα],nsites,ntimes)
+    α = getα(α_vec,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
 
     logpriorα = sum([log(pdf(Normal(0,10),α_vec[i])) for i in 1:size(α_vec)[1]])
@@ -314,7 +319,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (l
  - hypers: hyperparameters of the model
 """
 function ∇logpostλ_t(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
-    α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
+    α = getα(θ.α,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
     β₁ = θ.β₁; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
@@ -354,7 +359,7 @@ Compute the theoretical gradient of the log density of λ evaluated at λ, θ (V
  - hypers: hyperparameters of the model
 """
 function ∇logpostλ_t1(Y::Matrix{Float64},λ::Matrix{Float64},covars::Matrix{Float64},θ::parameter,distm::Matrix{Float64},indcens::Vector{CartesianIndex{2}},indnocens::Vector{CartesianIndex{2}},u::Matrix{Float64},hypers::hyperparameter)
-    α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
+    α = getα(θ.α,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
     β₁ = θ.β₁; ρ = θ.ρ
     Σ = getΣ(distm,ρ)
@@ -510,7 +515,7 @@ Obtain sensible initial values for λ
  - hypers: Hyperparameters of the model
 """
 function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter)
-    α = getα(θ.α,covars[:,hypers.covarsα],hypers.nsites,hypers.ntimes)
+    α = getα(θ.α,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
     initλ = quantile.(Gamma.(β₂,(1.)./α),0.5)
     return initλ
@@ -526,12 +531,12 @@ function plotθ(chains::Matrix{Float64},θ::parameter,λ_ind::Vector{Int64})
     txt = vcat(txt,["λ"*string(i) for i in λ_ind])
     p = fill(plot(),n,1)
     for j in 1:size(txt)[1]
-        p[j] = plot(chains[:,j],title=txt[j])
+        p[j] = plot(chains[:,j],title=txt[j],legend=:none)
         Plots.abline!(0,mean(chains[:,j]),linecolor=[:red])
         Plots.abline!(0,quantile(chains[:,j],0.025),linecolor=[:orange])
         Plots.abline!(0,quantile(chains[:,j],0.975),linecolor=[:orange])
     end
-    display(plot(p...,size=(2400,1800)))
+    display(plot(p...,size=(2400,1800),legend=:none))
 end
 
 """
