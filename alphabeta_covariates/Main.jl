@@ -116,7 +116,7 @@ chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
 plotθ(chains,initθ,[1,2,3,4])
 
-burn = 200
+burn = 1000
 fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1]],
                     mean(chains[burn:end,size(initθ.α)[1]+1]),
                     [mean(chains[burn:end,size(initθ.α)[1]+i+1]) for i in 1:size(initθ.β₂)[1]],
