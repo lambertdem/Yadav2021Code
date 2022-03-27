@@ -448,7 +448,11 @@ Compute density of the λ proposal distribution at logλprop
 function logdensλprop(logλ::Matrix{Float64},∇logλ::Matrix{Float64},logλprop::Matrix{Float64},τ::Vector{Float64},hypers::hyperparameter)
     μ = logλ .+ τ[2]*∇logλ/2
     logdensλ = 0
-    for i in 1:hypers.nsites*hypers.ntimes logdensλ += log(pdf(Normal(μ[i],sqrt(τ[2])),logλprop[i])) end
+    try
+        for i in 1:hypers.nsites*hypers.ntimes logdensλ += log(pdf(Normal(μ[i],sqrt(τ[2])),logλprop[i])) end
+    catch
+        logdensλ = -Inf
+    end
     return logdensλ
 end
 
