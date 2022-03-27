@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens, posterior_pred
 
-jsonfilenm = "RunHQ2_3mods" # Do NOT add json extension
+jsonfilenm = "RunHQ2_u4" # Do NOT add .json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
