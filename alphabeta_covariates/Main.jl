@@ -146,8 +146,11 @@ vars/minimum(vars)
 #############
 getQQ(Y,covars,fittedθ,hypers)
 
-covarsα = [30.0,2.0,5.0,9.0,1.0]
+covarsα = [10.0,2.0,5.0,9.0,1.0]
 # covarsβ₂ = []
 # preddens(fittedθ,covarsα,covarsβ₂,[0,100])
 
-posterior_pred(burn,chains,covarsα,fittedθ,distm)
+simY = posterior_pred(burn,chains,covarsα,fittedθ,distm)
+boxplot(simY)
+
+[quantile(simY[:,i],0.9) for i in 1:size(simY)[2]]

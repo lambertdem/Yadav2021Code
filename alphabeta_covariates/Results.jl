@@ -80,19 +80,17 @@ function posterior_pred(burnin,chains,covarsα,fittedθ,dist_m)
     chains = chains[burnin:end,1:sizeθ]
     d = size(dist_m)[1]
     Ys = Array{Float64}(undef,size(chains)[1],d)
-    for i in 1:1 #size(chains)[1]
+    for i in 1:size(chains)[1]
         #generate MVN vector
         tildeθ = getθobj(chains[i,1:sizeθ],fittedθ)
         θ = deparameterize(tildeθ)
-        α = θ.α[1] .+ covarsα*transpose(θ.α[2:end])
+        α = reshape(θ.α[1] .+ covarsα*transpose(θ.α[2:end]),d)
         μ = zeros(d)
         Σ = exp.(-dist_m/θ.ρ)
         MvN = rand(MvNormal(μ,Σ),1)
-        u_scale = cdf.(Normal(0,1),MvN)
-        display(α)
-        display(u_scale)
-        λ = [quantile.(Gamma(θ.β₂[1],(1.)/θ.α[i]),u_scale[i]) for i in 1:d]
-        Γ₁ = rand(Gamma(trueθ.β₁,1),d)
+        u_scale = reshape(cdf.(Normal(0,1),MvN),d)
+        λ = [quantile.(Gamma(θ.β₂[1],(1.)/α[i]),u_scale[i]) for i in 1:d]
+        Γ₁ = rand(Gamma(θ.β₁,1),d)
         Y = Γ₁./λ
         Ys[i,:] = Y
     end
