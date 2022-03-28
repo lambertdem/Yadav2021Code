@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens, posterior_pred
 
-jsonfilenm = "RunHQ2_u4" # Do NOT add .json extension
+jsonfilenm = "RunHQ2_u2" # Do NOT add .json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -109,14 +109,14 @@ filenm = "RunHQ2_2022-03-14T21-20-13-905.csv"
 filenm = "RunHQ2a_2022-03-21T21-42-50-842.csv"
 filenm = "RunHQ2NoCovs_2022-03-22T14-37-46-249.csv"
 filenm = "RunHQ2_3mods_2022-03-22T17-38-04-427.csv"
-filenm = "RunHQ2_u4_2022-03-27T10-57-21-777.csv"
+filenm = "RunHQ2_u4_2022-03-27T15-42-25-899.csv"
 
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
 plotθ(chains,initθ,[1,2,3,4])
 
-burn = 1000
+burn = 1500
 fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1]],
                     mean(chains[burn:end,size(initθ.α)[1]+1]),
                     [mean(chains[burn:end,size(initθ.α)[1]+i+1]) for i in 1:size(initθ.β₂)[1]],
