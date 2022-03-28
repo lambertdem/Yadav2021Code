@@ -5,7 +5,7 @@ using Statistics
 using Distributions: pdf,cdf,FDist,Normal,MvNormal,Gamma
 using SpecialFunctions: gamma
 include("MCMCfunctions.jl")
-using .MCMCfit: parameter,getα
+using .MCMCfit: parameter,getα, deparameterize
 include("Simulations.jl")
 using .simulations: testYmargins
 
@@ -82,16 +82,21 @@ function posterior_pred(burnin,chains,covarsα,fittedθ,dist_m)
     Ys = Array{Float64}(undef,size(chains)[1],d)
     for i in 1:1 #size(chains)[1]
         #generate MVN vector
-        θ = getθobj(chains[i,1:sizeθ],fittedθ)
-        α = θ.α[1] .+ covarsα*θ.α[2:end]
+        tildeθ = getθobj(chains[i,1:sizeθ],fittedθ)
+        θ = deparameterize(tildeθ)
+        α = θ.α[1] .+ covarsα*transpose(θ.α[2:end])
         μ = zeros(d)
         Σ = exp.(-dist_m/θ.ρ)
         MvN = rand(MvNormal(μ,Σ),1)
         u_scale = cdf.(Normal(0,1),MvN)
-        λ = [quantile.(Gamma(θ.β₂,(1.)/θ.α[i]),u_scale[i]) for i in 1:d]
+        display(α)
+        display(u_scale)
+        λ = [quantile.(Gamma(θ.β₂[1],(1.)/θ.α[i]),u_scale[i]) for i in 1:d]
         Γ₁ = rand(Gamma(trueθ.β₁,1),d)
         Y = Γ₁./λ
+        Ys[i,:] = Y
     end
+    return Ys
 end
 
 end

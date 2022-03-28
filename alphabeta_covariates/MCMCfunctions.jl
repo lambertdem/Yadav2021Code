@@ -527,18 +527,26 @@ end
 
 
 function plotθ(chains::Matrix{Float64},θ::parameter,λ_ind::Vector{Int64})
+    sizeθ = size(θ.α)[1] + size(θ.β₂)[1] + 2
     n = size(θ.α)[1] + size(θ.β₂)[1] + 2 + size(λ_ind)[1]
     txt = ["α"*Char(0x2080 + i) for i in 0:(size(θ.α)[1]-1)]
     txt = vcat(txt,"β₁")
     txt = vcat(txt,["β₂"*Char(0x2080 + i) for i in 0:(size(θ.β₂)[1]-1)])
     txt = vcat(txt,"ρ")
     txt = vcat(txt,["λ"*string(i) for i in λ_ind])
+
     p = fill(plot(),n,1)
-    for j in 1:size(txt)[1]
+    for j in 1:sizeθ
         p[j] = plot(chains[:,j],title=txt[j],legend=:none)
         Plots.abline!(0,mean(chains[:,j]),linecolor=[:red])
         Plots.abline!(0,quantile(chains[:,j],0.025),linecolor=[:orange])
         Plots.abline!(0,quantile(chains[:,j],0.975),linecolor=[:orange])
+    end
+    for j in 1:size(λ_ind)[1]
+        p[j+sizeθ] = plot(chains[:,sizeθ+λ_ind[j]],title=txt[sizeθ+j],legend=:none)
+        Plots.abline!(0,mean(chains[:,sizeθ+λ_ind[j]]),linecolor=[:red])
+        Plots.abline!(0,quantile(chains[:,sizeθ+λ_ind[j]],0.025),linecolor=[:orange])
+        Plots.abline!(0,quantile(chains[:,sizeθ+λ_ind[j]],0.975),linecolor=[:orange])
     end
     display(plot(p...,size=(2400,1800),legend=:none))
 end

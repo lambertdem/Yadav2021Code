@@ -100,8 +100,8 @@ mcmc1 = mcmc(hypers.niters, # Number of iterations
             hypers, # hyperparameters
             string(get(sim_or_real,"save_path",0),jsonfilenm,"_")) # Save path
 
-@time chains,τs = ΓΓ_MCMC(mcmc1)
-chains
+# @time chains,τs = ΓΓ_MCMC(mcmc1)
+# chains
 
 filenm = "RunHQ2_2022-03-14T21-20-13-905.csv"
 # filenm = "RunHQ3_2022-03-18T13-40-04-923.csv"
@@ -110,11 +110,12 @@ filenm = "RunHQ2a_2022-03-21T21-42-50-842.csv"
 filenm = "RunHQ2NoCovs_2022-03-22T14-37-46-249.csv"
 filenm = "RunHQ2_3mods_2022-03-22T17-38-04-427.csv"
 filenm = "RunHQ2_u4_2022-03-27T15-42-25-899.csv"
+filenm = "RunHQ2_u2_2022-03-28T00-42-31-884.csv"
 
 savepath = get(sim_or_real,"save_path",0)
 chains = Matrix{Float64}(CSV.read(string(savepath,filenm),DataFrame))
 
-plotθ(chains,initθ,[1,2,3,4])
+plotθ(chains,initθ,[6,7,8,9,10])
 
 burn = 1500
 fittedtildeθ = parameter([mean(chains[burn:end,i]) for i in 1:size(initθ.α)[1]],
@@ -145,7 +146,7 @@ vars/minimum(vars)
 #############
 getQQ(Y,covars,fittedθ,hypers)
 
-covarsα = [30,2,5,9,1]
+covarsα = [30.0,2.0,5.0,9.0,1.0]
 # covarsβ₂ = []
 # preddens(fittedθ,covarsα,covarsβ₂,[0,100])
 
