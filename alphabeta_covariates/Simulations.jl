@@ -66,6 +66,12 @@ function testYmargins(Y,covars,θ,column,hypers,qqplot=true)
     return(p)
 end
 
+"""
+Obtain a boxplot of observations at each location
+
+# Arguments
+ - Y : Observations or simulated observations
+"""
 function boxplot(Y)
     Ydf = DataFrame(Y,:auto)
     Ydf = stack(Ydf,1:size(Y)[2])

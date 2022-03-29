@@ -10,7 +10,7 @@ using .simulations: locmatrix, simulation, testYmargins, boxplot
 include("Results.jl")
 using .results: plotθλ, getQQ, compareQQ, preddens, posterior_pred
 
-jsonfilenm = "RunHQ2_u2" # Do NOT add .json extension
+jsonfilenm = "RunHQ2_u4" # Do NOT add .json extension
 runspath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Yadav2021code\\Runs\\"
 jsonpath = string(runspath,jsonfilenm,".json")
 sim,hypers,sim_or_real,initθ = readjson(jsonpath)
@@ -110,6 +110,7 @@ filenm = "RunHQ2a_2022-03-21T21-42-50-842.csv"
 filenm = "RunHQ2NoCovs_2022-03-22T14-37-46-249.csv"
 filenm = "RunHQ2_3mods_2022-03-22T17-38-04-427.csv"
 filenm = "RunHQ2_u4_2022-03-27T15-42-25-899.csv"
+filenm = "RunHQ2_u4_2022-03-28T20-13-25-865.csv"
 filenm = "RunHQ2_u2_2022-03-28T00-42-31-884.csv"
 
 savepath = get(sim_or_real,"save_path",0)
@@ -146,11 +147,11 @@ vars/minimum(vars)
 #############
 getQQ(Y,covars,fittedθ,hypers)
 
-covarsα = [10.0,2.0,5.0,9.0,1.0]
+covarsα = [20.0,2.0,1.0,1.0,10.0]
 # covarsβ₂ = []
 # preddens(fittedθ,covarsα,covarsβ₂,[0,100])
 
 simY = posterior_pred(burn,chains,covarsα,fittedθ,distm)
 boxplot(simY)
 
-[quantile(simY[:,i],0.9) for i in 1:size(simY)[2]]
+[quantile(simY[:,i],0.90) for i in 1:size(simY)[2]]

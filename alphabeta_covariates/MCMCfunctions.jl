@@ -525,7 +525,14 @@ function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter
     return initλ
 end 
 
+"""
+Plot current state of θ and λ chains.
 
+# Arguments
+ - chains : Matrix of θ and λ chains
+ - θ: example θ parameter to get right α and β₂ lenghts
+ - λ_ind: Indices of λs to plot
+"""
 function plotθ(chains::Matrix{Float64},θ::parameter,λ_ind::Vector{Int64})
     sizeθ = size(θ.α)[1] + size(θ.β₂)[1] + 2
     n = size(θ.α)[1] + size(θ.β₂)[1] + 2 + size(λ_ind)[1]
@@ -660,6 +667,15 @@ function ΓΓ_MCMC(init::mcmc)
     return chains,τmatrix
 end
 
+"""
+Read hyperparameter .json file 
+
+# Arguments
+ - pathjson : path to the .json file
+
+# Output
+ - hyperparameters and other instantiation objects
+"""
 function readjson(pathjson::String)
     json = parsefile(pathjson)
 
