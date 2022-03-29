@@ -192,6 +192,8 @@ function getα(α_vec::Vector{Float64},covars::Matrix{Float64},hypers)
         if size(covars)[1] == n
             α = α_vec[1].*ones(size(covars)[1]) .+ covars*α_vec[2:end]
         else
+            display(covars)
+            display(α_vec[2:end])
             α = α_vec[1].*ones(n) .+ repeat(covars*α_vec[2:end],outer=hypers.ntimes)
         end
     else
@@ -521,6 +523,7 @@ Obtain sensible initial values for λ
 function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter)
     α = getα(θ.α,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
+    display(α)
     initλ = quantile.(Gamma.(β₂,(1.)./α),0.5)
     return initλ
 end 
