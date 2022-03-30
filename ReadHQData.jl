@@ -85,10 +85,11 @@ prevs_mean2 = reshape(transpose(prevs_mean2[findall(x->x==1,ind_exc),:]),dims[1]
 prevs_mean3 = reshape(transpose(prevs_mean3[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
 
 for i in findall(isnan,prevs_mean2) prevs_mean2[i] = (prevs_mean1[i]+prevs_mean3[i])/2 end
+for i in findall(isnan,prevs_mean3) prevs_mean3[i] = (prevs_mean1[i]+prevs_mean2[i])/2 end
 covars = hcat(prevs_mean1,prevs_mean2,prevs_mean3)
 
-# fpath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Covars_HQ3mods_u4.csv"
-# CSV.write(fpath,DataFrame(covars,:auto))
+fpath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Covars_HQ3mods_u4.csv"
+CSV.write(fpath,DataFrame(covars,:auto))
 
 
 #######################
