@@ -524,6 +524,8 @@ function initvalsλ(θ::parameter,covars::Matrix{Float64},hypers::hyperparameter
     α = getα(θ.α,covars,hypers)
     β₂ = getβ₂(θ.β₂,covars,hypers)
     display(α)
+    display(β₂)
+    # initλ = [quantile(Gamma(β₂[i],(1)/α[i]),0.5) for i in 1:size()]
     initλ = quantile.(Gamma.(β₂,(1.)./α),0.5)
     return initλ
 end 
