@@ -4,7 +4,6 @@ path = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\"
 obs = Matrix{Float64}(CSV.read(string(path,"ObservationsHQ.csv"),DataFrame,header=0))
 prev_raw = Matrix{Float64}(CSV.read(string(path,"PrevisionsHQ.csv"),DataFrame,header=0)) 
 
-# previsions in 4D array: (days_ahead,member,day_since_start,basin)
 prev = Array{Float64}(undef,10,90,2191,5)
 for i in 1:5, j in 1:2191
     strt = (i-1)*10*2191+(j-1)*10+1
@@ -12,18 +11,53 @@ for i in 1:5, j in 1:2191
     prev[:,:,j,i] = prev_raw[strt:finsh,:]
 end
 
-# Get mean and SD of all members for a given time horizon
+##########################################################
+# Plot prevs against obs at site for a certain day ahead #
+##########################################################
+site = 5
 days_ahead = 1
+prevs = [Statistics.mean(prev[days_ahead,:,i,j][findall(!isnan,prev[days_ahead,:,i,j])]) for i in 1:2191,j in 1:5]
+
+Plots.plot(obs[:,site],prevs[:,site],seriestype = :scatter)
+Plots.abline!(1,0)
+
+Plots.plot(prevs[:,site],obs[:,site]-prevs[:,site],seriestype = :scatter)
+
+Plots.plot(prevs,obs,seriestype= :scatter)
+display(Plots.plot(prevs,obs.-prevs,seriestype = :scatter))
+
+# Filter residuals to set negatives to 0
+res = obs.-prevs
+for i in 1:size(res)[1], j in 1:size(res)[2] res[i,j] = ifelse(res[i,j]>0,res[i,j],0) end
+res
+sum_res = [sum(res[i,:]) for i in 1:2191]
+Plots.plot(sum_res,seriestype= :scatter)
+
+# Select only those times such that the spatial sum of residuals is more than undef
+u = 5
+ind_extr = findall(x-> x>u,sum_res)
+
+obs_extr = obs[ind_extr,:]
+prevs_extr = prevs[ind_extr,:]
+
+res_extr = obs_extr .- prevs_extr
+plot(prevs_extr,res_extr,seriestype = :scatter)
+
+plot(res_extr)
+
+############################
+# Fixed threshold approach #
+############################
+
+obs
 prevs_mean = [Statistics.mean(prev[days_ahead,:,i,j][findall(!isnan,prev[days_ahead,:,i,j])]) for i in 1:2191,j in 1:5]
 prevs_std = [Statistics.std(prev[days_ahead,:,i,j][findall(!isnan,prev[days_ahead,:,i,j])]) for i in 1:2191,j in 1:5]
 
+plot(obs)
 [quantile(obs[:,i],0.7) for i in 1:size(obs)[2]]
 
-
-###########################################################
-# Export mean and SD of all members for given threshold u #
-###########################################################
 u=4
+# ind_exc = sum([ifelse(obs[i,j]<u,0,1) for i in 1:size(obs)[1], j in 1:size(obs)[2]],dims=2)
 ind_exc = [ifelse(size(findall(x->x>u,obs[i,:]),1)==0,0,1) for i in 1:size(obs)[1]]
 exprt_obs = obs[findall(x->x==1,ind_exc),:]
 dims = size(exprt_obs)
@@ -37,25 +71,19 @@ covars = hcat(exprt_prevs_mean,exprt_prevs_std)
 # fpath = "C:\\Users\\lambe\\Documents\\McGill\\Masters\\Thesis\\Covars_HQ_u2.csv"
 # CSV.write(fpath,DataFrame(covars,:auto))
 
-##########################################################
-# Export mean and SD of each model for given threshold u #
-##########################################################
-u=4
+prevs_mean1 = [Statistics.mean(prev[days_ahead,1:20,i,j][findall(!isnan,prev[days_ahead,1:20,i,j])]) for i in 1:2191,j in 1:5]
+prevs_mean2 = [Statistics.mean(prev[days_ahead,21:40,i,j][findall(!isnan,prev[days_ahead,21:40,i,j])]) for i in 1:2191,j in 1:5]
+prevs_mean3 = [Statistics.mean(prev[days_ahead,41:90,i,j][findall(!isnan,prev[days_ahead,41:90,i,j])]) for i in 1:2191,j in 1:5]
 
+u=4
+# ind_exc = sum([ifelse(obs[i,j]<u,0,1) for i in 1:size(obs)[1], j in 1:size(obs)[2]],dims=2)
 ind_exc = [ifelse(size(findall(x->x>u,obs[i,:]),1)==0,0,1) for i in 1:size(obs)[1]]
 exprt_obs = obs[findall(x->x==1,ind_exc),:]
 dims = size(exprt_obs)
-
-prevs_mean1 = [Statistics.mean(prev[days_ahead,1:20,i,j][findall(!isnan,prev[days_ahead,1:20,i,j])]) for i in 1:2191,j in 1:5]
 prevs_mean1 = reshape(transpose(prevs_mean1[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
-
 prevs_mean2 = reshape(transpose(prevs_mean2[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
-prevs_mean2 = [Statistics.mean(prev[days_ahead,21:40,i,j][findall(!isnan,prev[days_ahead,21:40,i,j])]) for i in 1:2191,j in 1:5]
-
 prevs_mean3 = reshape(transpose(prevs_mean3[findall(x->x==1,ind_exc),:]),dims[1]*dims[2],1)
-prevs_mean3 = [Statistics.mean(prev[days_ahead,41:90,i,j][findall(!isnan,prev[days_ahead,41:90,i,j])]) for i in 1:2191,j in 1:5]
 
-for i in findall(isnan,prevs_mean2) prevs_mean1[i] = (prevs_mean2[i]+prevs_mean3[i])/2 end
 for i in findall(isnan,prevs_mean2) prevs_mean2[i] = (prevs_mean1[i]+prevs_mean3[i])/2 end
 for i in findall(isnan,prevs_mean3) prevs_mean3[i] = (prevs_mean1[i]+prevs_mean2[i])/2 end
 covars = hcat(prevs_mean1,prevs_mean2,prevs_mean3)
